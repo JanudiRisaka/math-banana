@@ -1,12 +1,12 @@
-// routes/authRoutes.js
+// routes/auth.route.js
 import express from 'express';
+import { signup, signin, me } from '../controllers/auth.controller.js';
+import authenticateToken from '../middleware/auth.middleware.js';
+
 const router = express.Router();
-import { register, login } from '../controllers/authController.js';
 
-// Register a new user
-router.post('/register', register);
-
-// Login an existing user
-router.post('/login', login);
+router.post('/signup', signup);
+router.post('/signin', signin);
+router.get('/me', authenticateToken, me); // Protect this route with token verification
 
 export default router;

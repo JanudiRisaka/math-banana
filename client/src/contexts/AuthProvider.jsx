@@ -1,7 +1,8 @@
-//src/contexts/Authcontext.jsx
+// src/contexts/AuthProvider.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import jwt_decode from 'jwt-decode';
 
 const AuthContext = createContext();
 
@@ -13,17 +14,34 @@ export const AuthProvider = ({ children }) => {
   // Check auth status on mount
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) return setLoading(false);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
+      try {
+        // Decode the token and check expiration
+        const decoded = jwt_decode(token);
+        const currentTime = Date.now() / 1000; // current time in seconds
+
+        if (decoded.exp < currentTime) {
+          localStorage.removeItem('token');
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        // Otherwise, try to get user data using the /me route
         const res = await axios.get('/auth/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         setUser(res.data.user);
       } catch (error) {
+        console.error('Authentication failed:', error.message);
         localStorage.removeItem('token');
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -35,43 +53,45 @@ export const AuthProvider = ({ children }) => {
   // Sign Up
   const signUp = async (email, password, username) => {
     try {
-      const res = await fetch('http://localhost:5000/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Signup failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-      navigate('/game');
-    } catch (error) {
-      throw error.message;
-    }
-  };
-
-
-  // Sign In
-  const signIn = async (email, password) => {
-    try {
-      const res = await axios.post('http://localhost:5000/auth/signin', { // Updated URL
+      const res = await axios.post('http://localhost:5000/auth/signup', {
         email,
-        password
+        password,
+        username
       });
+
+      if (res.status !== 200) {
+        throw new Error(res.data.message || 'Signup failed');
+      }
 
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
       navigate('/game');
     } catch (error) {
+      console.error('Signup failed:', error.response?.data?.message || error.message);
+      throw error.message;
+    }
+  };
+
+  // Sign In
+  const signIn = async (email, password) => {
+    try {
+      const res = await axios.post('http://localhost:5000/auth/signin', {
+        email,
+        password
+      });
+
+      if (res.status !== 200) {
+        throw new Error(res.data.message || 'Login failed');
+      }
+
+      localStorage.setItem('token', res.data.token);
+      setUser(res.data.user);
+      navigate('/game');
+    } catch (error) {
+      console.error('Login failed:', error.response?.data?.message || error.message);
       throw error.response?.data?.message || 'Login failed';
     }
-};
-
+  };
 
   // Sign Out
   const signOut = () => {

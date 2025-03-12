@@ -1,28 +1,19 @@
-// routes/userRoutes.js
+import authenticateToken from '../middleware/auth.middleware.js';
 import express from 'express';
 const router = express.Router();
 import {
-    getUser,
-    updateUser,
-    listUsers,
-    sendFriendRequest,
-    acceptFriendRequest,
-} from '../controllers/userController.js';
-import authenticateToken from '../middleware/authMiddleware.js';
+    getUserDetails,
+    updateUserDetails,
+    deleteUser
+} from '../controllers/user.controller.js';
 
-// Get a user's profile by ID
-router.get('/:id', authenticateToken, getUser);
+// Get the authenticated user's profile
+router.get('/profile', authenticateToken, getUserDetails);
 
-// Update a user's profile
-router.put('/:id', authenticateToken, updateUser);
+// Update the authenticated user's profile
+router.put('/profile', authenticateToken, updateUserDetails);
 
-// Get a list of users
-router.get('/', authenticateToken, listUsers);
-
-// Send a friend request
-router.post('/:id/friends', authenticateToken, sendFriendRequest);
-
-// Accept friend request
-router.put('/:id/friends/:friendId', authenticateToken, acceptFriendRequest);
+// Delete the authenticated user's profile
+router.delete('/profile', authenticateToken, deleteUser);
 
 export default router;

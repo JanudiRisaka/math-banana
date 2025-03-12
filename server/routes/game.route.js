@@ -5,8 +5,8 @@ import {
     createScore,
     getLeaderboard,
     getScoreForUser,
-} from '../controllers/gameController.js';
-import authenticateToken from '../middleware/authMiddleware.js';
+} from '../controllers/game.controller.js';
+import authenticateToken from '../middleware/auth.middleware.js';
 
 // Save a new score
 router.post('/scores', authenticateToken, createScore);

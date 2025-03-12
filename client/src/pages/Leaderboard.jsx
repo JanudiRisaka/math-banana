@@ -16,7 +16,7 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       // Fetch leaderboard data from your backend API
-      const response = await axios.get('/api/leaderboard');
+      const response = await axios.get('/leaderboard');
       const data = response.data.map(entry => ({
         ...entry,
         last_active: new Date(entry.updatedAt).toLocaleDateString()

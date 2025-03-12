@@ -8,7 +8,7 @@ import Game from './pages/Game';
 import Help from './pages/Help';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
-import UserProfile from './pages/UserProfile';
+import UserProfile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Header from './components/Layout/Header';
@@ -20,14 +20,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[url('">
       <div className="min-h-screen bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="container mx-auto px-4 py-8"
         >
           {/* Conditionally render Header based on current path */}
           {(location.pathname !== '/signin' && location.pathname !== '/signup') && <Header />}
-          
+
           <main className="container mx-auto px-4 py-8">
             <Routes>
               <Route path="/" element={<MainMenu />} />
