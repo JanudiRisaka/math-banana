@@ -31,7 +31,19 @@ export default function SignIn() {
 
     try {
       const validatedData = signInSchema.parse({ email, password });
-      await signIn(validatedData.email, validatedData.password, rememberMe);
+      const response = await signIn(validatedData.email, validatedData.password, rememberMe);
+
+      console.log('SignIn response:', response); // Debugging log
+
+      if (!response || !response.token) {
+        throw new Error('No token received');
+      }
+
+      // Save the token to localStorage
+      localStorage.setItem('token', response.token);
+      console.log('Token saved:', response.token); // Debugging log
+
+      // Redirect to the game page
       navigate('/game');
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -39,11 +51,11 @@ export default function SignIn() {
       } else {
         setError(err.message || 'Failed to sign in');
       }
+    } finally {
       setLoading(false);
     }
   };
 
-  // JSX remains the same as original
   return (
     <div className="min-h-auto flex flex-col items-center justify-center bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=2342&q=80')] bg-cover bg-center">
       <div className="absolute inset-0 bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm" />
@@ -53,25 +65,24 @@ export default function SignIn() {
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-md"
       >
-       <Button
-        variant="ghost"
-        className="absolute left-4 top-4 text-white hover:text-yellow-400 z-20"
-        onClick={() => navigate('/')}
-      >
-        <ArrowLeft className="w-5 h-5 mr-2" />
-        Back
-      </Button>
-
+        <Button
+          variant="ghost"
+          className="absolute left-4 top-4 text-white hover:text-yellow-400 z-20"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back
+        </Button>
 
         <div className="p-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 shadow-xl">
-        <div className="flex items-center justify-center my-8">
+          <div className="flex items-center justify-center my-8">
             <button
-                    onClick={handleLogoClick}
-                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-                  >
-                    <Sparkles className="w-8 h-8 text-yellow-400" />
-                    <h1 className="text-3xl font-bold text-white font-serif">Math Banana</h1>
-                  </button>
+              onClick={handleLogoClick}
+              className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+            >
+              <Sparkles className="w-8 h-8 text-yellow-400" />
+              <h1 className="text-3xl font-bold text-white font-serif">Math Banana</h1>
+            </button>
           </div>
 
           <h2 className="text-2xl font-bold text-center text-white mb-2">Welcome Back!</h2>

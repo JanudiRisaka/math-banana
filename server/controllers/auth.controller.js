@@ -26,7 +26,8 @@ export const signup = async (req, res) => {
 
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
   }
 };
 
@@ -45,15 +46,21 @@ export const signin = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '4h' } // Token expires in 4 hours
+    );
 
     res.status(200).json({
       message: 'Login successful',
       token,
-      user: { id: user._id, username: user.username, email: user.email } // Include user details
+      user: { id: user._id, username: user.username, email: user.email },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
   }
 };
 
@@ -62,19 +69,17 @@ export const me = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId); // req.user is set in the authenticateToken middleware
     if (!user) return res.status(400).json({ message: 'User not found' });
-    res.status(200).json({ user: { id: user._id, username: user.username, email: user.email } });
+    res.status(200).json({
+      user: { id: user._id, username: user.username, email: user.email },
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch user' });
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch user data' });
   }
 };
-const logout = async () => {
-  try {
-    await axios.post('http://localhost:5000/auth/logout'); // Ensure backend supports this
-  } catch (err) {
-    console.error('Logout failed:', err);
-  }
-  localStorage.removeItem('token');
-  setUser(null);
-  setIsAuthenticated(false);
-  window.location.reload();
+
+// Logout (client-side token removal)
+export const logout = (req, res) => {
+  // Inform the client to remove the token on the client-side
+  res.status(200).json({ message: 'Logout successful' });
 };

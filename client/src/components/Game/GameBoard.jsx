@@ -59,34 +59,34 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     };
   }, [fetchNewQuestion]);
 
- // Handle timer
-useEffect(() => {
-  if (!mounted.current) return;
+  // Handle timer
+  useEffect(() => {
+    if (!mounted.current) return;
 
-  timerRef.current = setInterval(() => {
-    if (mounted.current) {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      if (mounted.current) {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+            // Call onGameOver after the render
+            setTimeout(() => {
+              onGameOver(score);
+            }, 0);
+            return 0;
           }
-          // Call onGameOver after the render
-          setTimeout(() => {
-            onGameOver(score);
-          }, 0);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }
-  }, 1000);
+          return prev - 1;
+        });
+      }
+    }, 1000);
 
-  return () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-  };
-}, [difficulty, onGameOver, score]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [difficulty, onGameOver, score]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

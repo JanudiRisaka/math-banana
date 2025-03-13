@@ -1,50 +1,40 @@
-import Game from '../models/game.model.js';
+import Game from '../models/user.model.js';
 
 export const createScore = async (req, res) => {
   try {
-    console.log('Request body:', req.body);
     const { score, won = false } = req.body;
-    const userId = req.user?._id;
+    const userId = req.user.userId;  // Extract userId from the decoded token
 
     if (typeof score !== 'number' || score < 0) {
-      console.log('Invalid score:', score);
       return res.status(400).json({ message: 'Invalid score' });
     }
 
-    if (!userId) {
-      console.log('User not authenticated');
-      return res.status(400).json({ message: 'User not authenticated' });
-    }
+    // Find or create game data for this user
+    const gameData = await Game.findOneAndUpdate(
+      { user: userId },
+      {
+        $inc: {
+          gamesPlayed: 1,  // Increment games played
+          wins: won ? 1 : 0,  // Increment wins if the game was won
+        },
+        $set: {
+          lastGameScore: score,  // Set the last game score
+          highScore: Math.max(score, 0),  // Update high score if the current score is higher
+        },
+      },
+      { new: true, upsert: true }  // Upsert means create a new document if it doesn't exist
+    );
 
-    let gameData = await Game.findOne({ user: userId });
-    if (!gameData) {
-      gameData = new Game({ user: userId });
-    }
-
-    gameData.score = score;
-    gameData.lastPlayed = new Date();
-    gameData.gamesPlayed += 1;
-    gameData.lastGameScore = score;
-
-    if (won) gameData.wins += 1;
-    if (score > gameData.highScore) gameData.highScore = score;
-
-    const today = new Date().toDateString();
-    const lastPlayedDate = gameData.lastPlayed.toDateString();
-    if (today === lastPlayedDate) {
-      gameData.dailyStreak += 1;
-    } else {
-      gameData.dailyStreak = 1;
-    }
-
-    await gameData.save();
-
-    res.status(201).json({ message: 'Score and stats updated', gameData });
+    res.status(200).json({
+      message: 'Game data updated successfully',
+      data: gameData,
+    });
   } catch (error) {
     console.error('Error saving score:', error);
-    res.status(500).json({ message: 'Failed to save score', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 // Get the leaderboard (sorted by highest score)
 export const getLeaderboard = async (req, res) => {

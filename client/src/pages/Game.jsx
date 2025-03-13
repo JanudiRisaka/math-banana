@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { jwtDecode } from 'jwt-decode';
 import DifficultySelect from '../components/Game/DifficultySelect';
 import GameBoard from '../components/Game/GameBoard';
 import GameOver from '../components/Game/GameOver';
@@ -17,7 +18,7 @@ const Game = () => {
   }, [setScore]);
 
 
-  const saveScoreToDatabase = async (score, userId, won) => {
+  const saveScoreToDatabase = async (score, won) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -25,20 +26,21 @@ const Game = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/game', {
+      const response = await fetch('http://localhost:5000/game/scores', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ score: Number(score), userId, won })
+        body: JSON.stringify({ score: Number(score), won }), // No need to send userId here
       });
 
+      const responseData = await response.json(); // Log full response
+      console.log('Server response:', responseData);
 
       if (!response.ok) {
-        const errorDetails = await response.json();
-        console.error('Error details:', errorDetails);
-        throw new Error('Failed to save score');
+        console.error('Failed to save score:', responseData);
+        return;
       }
 
       console.log('Score saved successfully');
@@ -49,15 +51,32 @@ const Game = () => {
 
  // Handle game over and save score to the database
  const handleGameOver = useCallback(() => {
-  const userId = "USER_ID"; // Replace with actual user ID (e.g., from your authentication system)
-  const won = score > 50; // Example: user wins if the score is above 50 (adjust based on your game rules)
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.error('Authorization token is missing');
+    return;
+  }
 
-  // Save score and other data to the database
-  saveScoreToDatabase(score, userId, won);
+  try {
+    const decoded = jwtDecode(token);
+    console.log('Decoded token:', decoded); // Log token payload
 
-  // Continue with your existing logic for handling game over
-  setGameState('gameOver');
-  }, [score]);
+    const userId = decoded?.userId; // Ensure this matches your JWT payload
+    if (!userId) {
+      console.error('User ID missing from token');
+      return;
+    }
+
+    console.log('User ID:', userId);
+    const won = score > 50; // Example win condition
+
+    saveScoreToDatabase(score, userId, won);
+    setGameState('gameOver');
+  } catch (error) {
+    console.error('Failed to decode token:', error);
+  }
+}, [score]);
+
 
   const handleRestart = useCallback(() => {
     setGameState('difficulty');

@@ -15,7 +15,7 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await axios.get('/leaderboard');
+      const response = await axios.get('http://localhost:5000/leaderboard'); // Ensure full URL if necessary
 
       console.log("API Response:", response.data); // Debugging log
 
@@ -31,6 +31,7 @@ const Leaderboard = () => {
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error.message);
+      // Optionally, you can set a state variable to display an error message to the user
     } finally {
       setLoading(false);
     }
