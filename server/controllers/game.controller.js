@@ -1,4 +1,5 @@
-import Game from '../models/user.model.js';
+import Game from '../models/game.model.js'; // Import the Game model
+import User from '../models/user.model.js'; // Import the User model (if needed)
 
 export const createScore = async (req, res) => {
   try {

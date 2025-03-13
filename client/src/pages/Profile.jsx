@@ -19,7 +19,7 @@ const Profile = () => {
       // Fetch profile details from the backend if user is authenticated
       const fetchProfile = async () => {
         try {
-          const response = await axios.get(`/mathbanana/profile/${user.id}`, {
+          const response = await axios.get(`http://localhost:5000/user/profile/${user.id}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           });
           setProfile(response.data);

@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
+app.use('/user', userRoutes);
 app.use('/game', gameRoutes);
 
 mongoose.connect(process.env.MONGO_URI)

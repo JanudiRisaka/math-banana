@@ -13,29 +13,32 @@ const Leaderboard = () => {
     fetchLeaderboard();
   }, []);
 
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/leaderboard'); // Ensure full URL if necessary
+const fetchLeaderboard = async () => {
+  try {
+    const response = await axios.get('http://localhost:5000/game/leaderboard'); // Ensure full URL if necessary
 
-      console.log("API Response:", response.data); // Debugging log
+    console.log("API Response:", response.data); // Debugging log
 
-      if (response.data && Array.isArray(response.data.leaderboard)) {
-        const data = response.data.leaderboard.map(entry => ({
-          ...entry,
-          last_active: new Date(entry.updatedAt).toLocaleDateString()
-        }));
+    if (response.data && Array.isArray(response.data.leaderboard)) {
+      // Sort leaderboard by highScore in descending order
+      const sortedData = response.data.leaderboard.sort((a, b) => b.highScore - a.highScore);
 
-        setLeaderboard(data);
-      } else {
-        throw new Error('Invalid leaderboard data');
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error.message);
-      // Optionally, you can set a state variable to display an error message to the user
-    } finally {
-      setLoading(false);
+      const data = sortedData.map(entry => ({
+        ...entry,
+        last_active: new Date(entry.updatedAt).toLocaleDateString()
+      }));
+
+      setLeaderboard(data);
+    } else {
+      throw new Error('Invalid leaderboard data');
     }
-  };
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error.message);
+    // Optionally, you can set a state variable to display an error message to the user
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   const getRankIcon = (rank) => {
@@ -68,55 +71,60 @@ const Leaderboard = () => {
         </div>
 
         <div className="space-y-4">
-          {leaderboard.map((entry, index) => (
-            <motion.div
-              key={entry._id} // MongoDB uses _id instead of id
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex items-center bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors ${
-                entry._id === user?._id ? 'border-2 border-yellow-400' : ''
-              }`}
-            >
-              <div className="w-12 text-center">
-                {getRankIcon(index) || (
-                  <span className="text-white/80 text-lg">{index + 1}</span>
-                )}
-              </div>
-              <div className="flex items-center flex-1 px-4">
-                {entry.avatarUrl ? (
-                  <img
-                    src={entry.avatarUrl}
-                    alt={entry.username}
-                    className="w-10 h-10 rounded-full mr-3 border border-white/20"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                    <User className="w-5 h-5 text-gray-400" />
+          {leaderboard.map((entry, index) => {
+            console.log(entry); // Move this log inside the .map() function to inspect entry
+            return (
+              <motion.div
+                key={entry._id} // MongoDB uses _id instead of id
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className={`flex items-center bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors ${
+                  entry._id === user?._id ? 'border-2 border-yellow-400' : ''
+                }`}
+              >
+                <div className="w-12 text-center">
+                  {getRankIcon(index) || (
+                    <span className="text-white/80 text-lg">{index + 1}</span>
+                  )}
+                </div>
+                <div className="flex items-center flex-1 px-4">
+                  {entry.avatarUrl ? (
+                    <img
+                      src={entry.avatarUrl}
+                      alt={entry.username}
+                      className="w-10 h-10 rounded-full mr-3 border border-white/20"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                      <User className="w-5 h-5 text-gray-400" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-gray-300 font-semibold">{entry.username}</h3>
+                    <div className="flex items-center text-gray-400 text-sm">
+                      <Clock className="w-3 h-3 mr-1" />
+                      <span>Last active: {entry.last_active}</span>
+                    </div>
                   </div>
-                )}
-                <div>
-                  <h3 className="text-white font-semibold">{entry.username}</h3>
-                  <div className="flex items-center text-gray-400 text-sm">
-                    <Clock className="w-3 h-3 mr-1" />
-                    <span>Last active: {entry.last_active}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-yellow-400 font-bold text-xl">
+                    {entry.highScore.toLocaleString()}
+                  </div>
+                  <div className="text-gray-400 text-sm">
+                    Level {Math.floor(entry.highScore / 1000)}
                   </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-yellow-400 font-bold text-xl">
-                  {entry.highScore.toLocaleString()}
-                </div>
-                <div className="text-gray-400 text-sm">
-                  Level {Math.floor(entry.highScore / 1000)}
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
     </div>
   );
+
+
 };
 
 export default Leaderboard;

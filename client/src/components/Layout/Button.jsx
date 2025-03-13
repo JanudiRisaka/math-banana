@@ -25,10 +25,10 @@ const buttonVariants = cva(
   }
 );
 
-const Button = ({ className, variant, size, ...props }) => {
+const Button = ({ className, variant, size, fullWidth, ...props }) => {
   return (
     <button
-      className={twMerge(buttonVariants({ variant, size, className }))} // Use twMerge
+      className={twMerge(buttonVariants({ variant, size, className }), fullWidth ? 'w-full' : '')} // Add 'w-full' if fullWidth is true
       {...props}
     />
   );
