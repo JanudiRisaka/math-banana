@@ -4,9 +4,6 @@ import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-r
 import { Button } from './Button';
 import { useGameStore } from '../../stores/useGameStore.js';
 import { useAuth } from '../../contexts/AuthContext';
-import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, EmailShareButton } from 'react-share'; // Import share buttons from react-share
-import { FacebookIcon, TwitterIcon, WhatsappIcon, EmailIcon } from 'react-share'; // Import the icons
-
 
 function Header() {
   const { isMuted, toggleMute, resetGame } = useGameStore();
@@ -97,7 +94,9 @@ const handleShare = () => {
             </button>
             <Button
               variant="ghost"
-              onClick={logout}
+              onClick={() => {
+                logout();
+              }}
               className="text-white hover:text-red-400"
             >
               Logout

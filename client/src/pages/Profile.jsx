@@ -43,10 +43,8 @@ const Profile = () => {
 
   const handleUpdateProfile = async () => {
     try {
-      const updatedData = {
-        username: newUsername || user.username,
-        password: newPassword || user.password, // Update password only if entered
-      };
+      const updatedData = { username: newUsername || user.username };
+      if (newPassword) updatedData.password = newPassword; // Update only if provided
 
       const response = await axios.put(
         `/mathbanana/profile/${user.id}`,
@@ -62,6 +60,7 @@ const Profile = () => {
       console.error('Error updating profile:', error.message);
     }
   };
+
 
   const handleDeleteAccount = async () => {
     try {
@@ -109,8 +108,10 @@ const Profile = () => {
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <Calendar className="w-8 h-8 text-banana-dark mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Daily Streak</p>
-                <p className="text-xl font-bold">{profile?.dailyStreak?.count || 'N/A'}</p>
+                <p className="text-xl font-bold">{profile?.stats?.dailyStreak || 'N/A'}</p>
+                <p className="text-gray-600">
+                  Last Played: {profile?.stats?.lastPlayed ? new Date(profile.stats.lastPlayed).toLocaleDateString() : 'N/A'}
+                </p>
               </div>
             </div>
 

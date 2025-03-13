@@ -16,9 +16,48 @@ const Game = () => {
     setScore(0);
   }, [setScore]);
 
-  const handleGameOver = useCallback((finalScore) => {
-    setGameState('gameOver');
-  }, []);
+
+  const saveScoreToDatabase = async (score, userId, won) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Authorization token is missing');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/game', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ score: Number(score), userId, won })
+      });
+
+
+      if (!response.ok) {
+        const errorDetails = await response.json();
+        console.error('Error details:', errorDetails);
+        throw new Error('Failed to save score');
+      }
+
+      console.log('Score saved successfully');
+    } catch (err) {
+      console.error('Error saving score:', err);
+    }
+  };
+
+ // Handle game over and save score to the database
+ const handleGameOver = useCallback(() => {
+  const userId = "USER_ID"; // Replace with actual user ID (e.g., from your authentication system)
+  const won = score > 50; // Example: user wins if the score is above 50 (adjust based on your game rules)
+
+  // Save score and other data to the database
+  saveScoreToDatabase(score, userId, won);
+
+  // Continue with your existing logic for handling game over
+  setGameState('gameOver');
+  }, [score]);
 
   const handleRestart = useCallback(() => {
     setGameState('difficulty');

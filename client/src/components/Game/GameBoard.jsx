@@ -17,14 +17,14 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   const [answer, setAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const { score, setScore } = useGameStore();
-  const timerRef = useRef(null);
+  const timerRef = useRef();
   const mounted = useRef(true);
 
   const fetchNewQuestion = useCallback(async () => {
     if (!mounted.current) return;
-    
+
     try {
       setIsLoading(true);
       const response = await fetch('https://marcconrad.com/uob/banana/api.php');
@@ -44,9 +44,13 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     }
   }, []);
 
+  // Handle component mount/unmount
   useEffect(() => {
     mounted.current = true;
+
+    // Initial question fetch
     fetchNewQuestion();
+
     return () => {
       mounted.current = false;
       if (timerRef.current) {
@@ -55,53 +59,61 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     };
   }, [fetchNewQuestion]);
 
-  useEffect(() => {
-    if (!mounted.current) return;
+ // Handle timer
+useEffect(() => {
+  if (!mounted.current) return;
 
-    timerRef.current = setInterval(() => {
-      if (mounted.current) {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-            }
-            onGameOver(score);
-            return 0;
+  timerRef.current = setInterval(() => {
+    if (mounted.current) {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
           }
-          return prev - 1;
-        });
-      }
-    }, 1000);
+          // Call onGameOver after the render
+          setTimeout(() => {
+            onGameOver(score);
+          }, 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }
+  }, 1000);
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [difficulty, onGameOver, score]);
+  return () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  };
+}, [difficulty, onGameOver, score]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentQuestion || !mounted.current) return;
 
     const isCorrect = Number(answer) === currentQuestion.solution;
-    
+
     if (isCorrect) {
       const points = Math.floor(100 * DIFFICULTY_SETTINGS[difficulty].multiplier);
       setScore(score + points);
       setAnswer('');
       await fetchNewQuestion();
     } else {
-      setLives(prev => {
+      setLives((prev) => {
         const newLives = prev - 1;
         if (newLives === 0) {
           if (timerRef.current) {
             clearInterval(timerRef.current);
           }
-          onGameOver(score);
+          // Defer the onGameOver call until after the render cycle
+          setTimeout(() => {
+            onGameOver(score);
+          }, 0);
         }
         return newLives;
       });
+
       setAnswer('');
     }
   };
@@ -119,6 +131,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-6"
       >
+        {/* Game Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-2">
             {[...Array(3)].map((_, i) => (
@@ -141,6 +154,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
           </div>
         </div>
 
+        {/* Question Display */}
         <div className="mb-8">
           <AnimatePresence mode="wait">
             {isLoading ? (
@@ -188,6 +202,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
           </AnimatePresence>
         </div>
 
+        {/* Answer Input */}
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
           <div className="mb-4">
             <input

@@ -1,4 +1,3 @@
-//src/contexts/Authcontext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -17,7 +16,7 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         if (!token) return setLoading(false);
 
-        const res = await axios.get('/auth/me', {
+        const res = await axios.get('http://localhost:5000/auth/me', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -35,49 +34,41 @@ export const AuthProvider = ({ children }) => {
   // Sign Up
   const signUp = async (email, password, username) => {
     try {
-      const res = await fetch('http://localhost:5000/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, username }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Signup failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      setUser(data.user);
-      navigate('/game');
-    } catch (error) {
-      throw error.message;
-    }
-  };
-
-
-  // Sign In
-  const signIn = async (email, password) => {
-    try {
-      const res = await axios.post('http://localhost:5000/auth/signin', { // Updated URL
+      const res = await axios.post('http://localhost:5000/auth/signup', {
         email,
-        password
+        password,
+        username,
       });
 
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
       navigate('/game');
     } catch (error) {
+      throw error.response?.data?.message || 'Signup failed';
+    }
+  };
+
+  // Sign In
+  const signIn = async (email, password) => {
+    try {
+      const res = await axios.post('http://localhost:5000/auth/signin', {
+        email,
+        password
+      });
+
+      localStorage.setItem('token', res.data.token);
+      setUser(res.data.user);
+      navigate('/');
+    } catch (error) {
       throw error.response?.data?.message || 'Login failed';
     }
-};
+  };
 
-
-  // Sign Out
-  const signOut = () => {
+  // Sign Out (Logout)
+  const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    navigate('/signin');
+    navigate('/'); // Redirect to Sign In page
   };
 
   return (
@@ -87,7 +78,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         signUp,
         signIn,
-        signOut,
+        logout,
         loading
       }}
     >

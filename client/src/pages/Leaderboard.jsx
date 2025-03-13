@@ -15,19 +15,27 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // Fetch leaderboard data from your backend API
       const response = await axios.get('/leaderboard');
-      const data = response.data.map(entry => ({
-        ...entry,
-        last_active: new Date(entry.updatedAt).toLocaleDateString()
-      }));
-      setLeaderboard(data);
+
+      console.log("API Response:", response.data); // Debugging log
+
+      if (response.data && Array.isArray(response.data.leaderboard)) {
+        const data = response.data.leaderboard.map(entry => ({
+          ...entry,
+          last_active: new Date(entry.updatedAt).toLocaleDateString()
+        }));
+
+        setLeaderboard(data);
+      } else {
+        throw new Error('Invalid leaderboard data');
+      }
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      console.error('Error fetching leaderboard:', error.message);
     } finally {
       setLoading(false);
     }
   };
+
 
   const getRankIcon = (rank) => {
     switch (rank) {

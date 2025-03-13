@@ -67,3 +67,14 @@ export const me = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch user' });
   }
 };
+const logout = async () => {
+  try {
+    await axios.post('http://localhost:5000/auth/logout'); // Ensure backend supports this
+  } catch (err) {
+    console.error('Logout failed:', err);
+  }
+  localStorage.removeItem('token');
+  setUser(null);
+  setIsAuthenticated(false);
+  window.location.reload();
+};

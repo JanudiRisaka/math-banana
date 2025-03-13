@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, RotateCcw, Home } from 'lucide-react';
 import { Button } from '../Layout/Button';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../stores/useGameStore';
+import axios from 'axios'; // Import axios for HTTP requests
 
 const GameOver = ({ score, onRestart, onBackToMenu }) => {
   const navigate = useNavigate();
   const { resetGame } = useGameStore();
+
+  // Function to send game data to the backend
+  const saveGameData = async () => {
+    try {
+      const response = await axios.post('/game', { score, won: score > 100 }); // Example condition for 'won'
+      console.log('Game data saved:', response.data);
+    } catch (error) {
+      console.error('Error saving game data:', error);
+    }
+  };
+
+  useEffect(() => {
+    saveGameData(); // Save game data when component mounts
+  }, []);
 
   const handleBackToMenu = () => {
     resetGame();
