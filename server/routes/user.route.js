@@ -12,7 +12,7 @@ import {
 router.get('/profile/:id', authenticateToken, getUserDetails);
 
 // Update the authenticated user's profile
-router.put('/profile', authenticateToken, updateUserDetails);
+router.put('/profile/:id', authenticateToken, updateUserDetails);
 
 // Delete the authenticated user's profile
 router.delete('/profile/:id', authenticateToken, deleteUser); // Modified route for deletion

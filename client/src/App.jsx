@@ -12,12 +12,16 @@ import Leaderboard from './pages/Leaderboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Header from './components/Layout/Header';
 import MainMenu from './pages/MainMenu';
+import bg from './assets/background.jpg';
 
 export default function App() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm">
+    <div
+  className="min-h-screen bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm"
+  style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

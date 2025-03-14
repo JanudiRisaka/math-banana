@@ -3,35 +3,58 @@ import User from '../models/user.model.js'; // Import the User model (if needed)
 
 export const createScore = async (req, res) => {
   try {
-    const { score, won = false } = req.body;
-    const userId = req.user.userId;  // Extract userId from the decoded token
+    console.log("Request body:", req.body); // Debugging
 
-    if (typeof score !== 'number' || score < 0) {
-      return res.status(400).json({ message: 'Invalid score' });
+    const { score, won = false } = req.body;
+    const userId = req.user.userId;
+
+    if (typeof score !== "number" || score < 0) {
+      return res.status(400).json({ message: "Invalid score" });
     }
 
-    // Find or create game data for this user
-    const gameData = await Game.findOneAndUpdate(
-      { user: userId },
-      {
-        $inc: {
-          gamesPlayed: 1,  // Increment games played
-          wins: won ? 1 : 0,  // Increment wins if the game was won
-        },
-        $set: {
-          lastGameScore: score,  // Set the last game score
-          highScore: Math.max(score, 0),  // Update high score if the current score is higher
-        },
-      },
-      { new: true, upsert: true }  // Upsert means create a new document if it doesn't exist
-    );
+    let gameData = await Game.findOne({ user: userId });
+    const today = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (gameData) {
+      const lastPlayed = gameData.lastPlayed ? new Date(gameData.lastPlayed) : null;
+
+      if (lastPlayed && today - lastPlayed < 2 * oneDay) {
+        if (today - lastPlayed >= oneDay) {
+          gameData.dailyStreak += 1;
+        }
+      } else {
+        gameData.dailyStreak = 1;
+      }
+    } else {
+      gameData = new Game({
+        user: userId,
+        score,
+        gamesPlayed: 0,
+        wins: 0,
+        lastGameScore: score,
+        highScore: score,
+        dailyStreak: 1,
+        lastPlayed: today,
+      });
+    }
+
+    // Update game data
+    gameData.score = score;
+    gameData.gamesPlayed += 1;
+    if (won) gameData.wins += 1;
+    gameData.lastGameScore = score;
+    gameData.highScore = Math.max(gameData.highScore, score);
+    gameData.lastPlayed = today;
+
+    await gameData.save();
 
     res.status(200).json({
-      message: 'Game data updated successfully',
+      message: "Game data updated successfully",
       data: gameData,
     });
   } catch (error) {
-    console.error('Error saving score:', error);
+    console.error("Error saving score:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -41,7 +64,10 @@ export const createScore = async (req, res) => {
 export const getLeaderboard = async (req, res) => {
   try {
     // Fetch the leaderboard, sorted by score in descending order, and limit to 10 entries
-    const leaderboard = await Game.find().sort({ score: -1 }).limit(10);
+    const leaderboard = await Game.find()
+      .sort({ score: -1 })
+      .limit(10)
+      .populate('user', 'username'); // Populate the 'user' field with 'username'
 
     // Check if the leaderboard is empty
     if (!leaderboard || leaderboard.length === 0) {

@@ -97,12 +97,12 @@ const fetchLeaderboard = async () => {
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                      <User className="w-5 h-5 text-gray-400" />
+                      <User className="w-5 h-5 text-gray-300" />
                     </div>
                   )}
                   <div>
-                    <h3 className="text-gray-300 font-semibold">{entry.username}</h3>
-                    <div className="flex items-center text-gray-400 text-sm">
+                    <h3 className="text-gray-300 font-semibold">{entry.user.username}</h3>
+                    <div className="flex items-center text-gray-300 text-sm">
                       <Clock className="w-3 h-3 mr-1" />
                       <span>Last active: {entry.last_active}</span>
                     </div>

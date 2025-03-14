@@ -17,7 +17,7 @@ export default function MainMenu() {
     } else {
       navigate('/signin');
     }
-  };  
+  };
 
   return (
     <motion.div
@@ -27,12 +27,12 @@ export default function MainMenu() {
       exit={{ opacity: 0 }}
       transition={{ delay: 0.2 }}
     >
-      <h2 className="text-4xl md:text-6xl font-bold mb-4 font-serif">Math Banana Challenge</h2>
-      <p className="text-xl mb-8">Test your math skills with this magical adventure!</p>
+      <h2 className="text-4xl md:text-6xl font-bold mb-4 font-serif mt-10">Math Banana Challenge</h2>
+      <p className="text-xl my-8">Test your math skills with this magical adventure!</p>
       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        <Button 
-          variant="fantasy" 
-          size="lg" 
+        <Button
+          variant="fantasy"
+          size="lg"
           className="relative px-12 py-4 text-lg font-semibold"
           onClick={handleStartGame}
         >

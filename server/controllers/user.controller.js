@@ -49,8 +49,9 @@ export const getUserDetails = async (req, res) => {
 };
 
 // Update user details
+// controllers/user.controller.js
 export const updateUserDetails = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, avatar } = req.body;
 
   try {
     const user = await User.findById(req.user.id);
@@ -59,7 +60,7 @@ export const updateUserDetails = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!username && !email && !password) {
+    if (!username && !email && !password && !avatar) {
       return res.status(400).json({ message: 'No data provided to update' });
     }
 
@@ -70,10 +71,10 @@ export const updateUserDetails = async (req, res) => {
 
     if (username) user.username = username;
     if (email) user.email = email;
-
+    if (avatar) user.avatar = avatar;
     await user.save();
 
-    res.status(200).json({ message: 'User details updated successfully' });
+    res.status(200).json({ message: 'User details updated successfully', user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -88,7 +89,7 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    await User.findByIdAndDelete(req.user.id); // Simplified delete operation
+    await User.findByIdAndDelete(req.user.id);
 
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {

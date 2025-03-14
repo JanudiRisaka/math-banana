@@ -4,10 +4,13 @@ import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-r
 import { Button } from './Button';
 import { useGameStore } from '../../stores/useGameStore.js';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAudio } from '../../hooks/useAudio.js';
+import backgroundMusic from '../../assets/Genshin Impact Main Theme.mp3';
 
 function Header() {
-  const { isMuted, toggleMute, resetGame } = useGameStore();
   const { user, isAuthenticated, login, logout } = useAuth();
+  const { isMuted: storeMuted, toggleMute: storeToggleMute, resetGame } = useGameStore();
+  const [audioMuted, audioToggleMute] = useAudio(backgroundMusic, storeMuted);
   const navigate = useNavigate();
 
 const handleShare = () => {
@@ -32,6 +35,11 @@ const handleShare = () => {
     navigate('/');
   };
 
+  const handleToggleMute = () => {
+    storeToggleMute();
+    audioToggleMute();
+  };
+
   return (
     <header id="game-header" className="relative flex items-center justify-between mb-8 p-4 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">
       <button
@@ -42,14 +50,18 @@ const handleShare = () => {
         <h1 className="text-3xl font-bold text-white font-serif">Math Banana</h1>
       </button>
       <nav className="flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleMute}
-          className="text-white hover:text-yellow-400 transition-all duration-300"
-        >
-          {isMuted ? <VolumeX /> : <Volume2 />}
-        </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleToggleMute}
+        className="text-white hover:text-yellow-400 transition-all duration-300"
+      >
+        {storeMuted ? ( // Use storeMuted here
+          <VolumeX className="w-5 h-5" />
+        ) : (
+          <Volume2 className="w-5 h-5" />
+        )}
+      </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -81,10 +93,10 @@ const handleShare = () => {
               onClick={() => navigate('/profile')}
               className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300"
             >
-              {user?.picture ? (
+              {user.avatar ? (
                 <img
-                  src={user.picture}
-                  alt="Profile"
+                  src={user.avatar}
+                  alt="Avatar"
                   className="w-8 h-8 rounded-full border-2 border-yellow-400"
                 />
               ) : (
