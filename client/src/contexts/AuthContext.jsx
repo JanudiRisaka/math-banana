@@ -1,3 +1,4 @@
+//client/src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +24,7 @@ export const AuthProvider = ({ children }) => {
         setUser(res.data.user);
         localStorage.setItem('user', JSON.stringify(res.data.user)); // Store user in localStorage
       } catch (error) {
+        console.error('Token validation failed:', error.response?.data); // Log error details
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       } finally {
@@ -45,10 +47,11 @@ export const AuthProvider = ({ children }) => {
         password,
         username,
       });
-
+      if (res.data && res.data.token) {
       localStorage.setItem('token', res.data.token);
       setUser(res.data.user);
       navigate('/game');
+    }
     } catch (error) {
       throw error.response?.data?.message || 'Signup failed';
     }
@@ -57,14 +60,12 @@ export const AuthProvider = ({ children }) => {
   // Sign In
   const signIn = async (email, password) => {
     try {
-      const res = await axios.post('http://localhost:5000/auth/signin', {
-        email,
-        password
-      });
-
-      localStorage.setItem('token', res.data.token);
-      setUser(res.data.user);
-      navigate('/');
+      const res = await axios.post('http://localhost:5000/auth/signin', {email,password});
+      if (res.data && res.data.token) {
+        localStorage.setItem('token', res.data.token);
+        setUser(res.data.user);
+        navigate('/');
+      }
     } catch (error) {
       throw error.response?.data?.message || 'Login failed';
     }

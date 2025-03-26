@@ -24,8 +24,14 @@ export const signup = async (req, res) => {
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    res.status(201).json({ message: 'User registered successfully' });
-  } catch (error) {
+    // Generate token
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '5h' });
+
+    res.status(201).json({
+      message: 'Signup successful',
+      user: { id: newUser._id, username: newUser.username, email: newUser.email },
+      token, // Send token so user can be automatically logged in
+    });  } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Something went wrong. Please try again later.' });
   }
@@ -68,7 +74,7 @@ export const signin = async (req, res) => {
 export const me = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId); // req.user is set in the authenticateToken middleware
-    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.status(200).json({
       user: { id: user._id, username: user.username, email: user.email },
     });

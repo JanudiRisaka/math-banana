@@ -61,24 +61,44 @@ export const createScore = async (req, res) => {
 
 
 // Get the leaderboard (sorted by highest score)
+// controllers/game.controller.js
 export const getLeaderboard = async (req, res) => {
   try {
-    // Fetch the leaderboard, sorted by score in descending order, and limit to 10 entries
-    const leaderboard = await Game.find()
-      .sort({ score: -1 })
-      .limit(10)
-      .populate('user', 'username'); // Populate the 'user' field with 'username'
+    // 1. Fetch all games with user data
+    const games = await Game.find()
+      .populate({
+        path: 'user',
+        select: 'username',
+      })
+      .lean(); // Convert to plain JS objects
 
-    // Check if the leaderboard is empty
-    if (!leaderboard || leaderboard.length === 0) {
+    // 2. Filter out entries with invalid users
+    const validGames = games.filter(game => game.user !== null);
+
+    // 3. Validate highScore and provide defaults if missing
+    const validatedGames = validGames.map(game => ({
+      ...game,
+      highScore: typeof game.highScore === 'number' ? game.highScore : 0,
+    }));
+
+    // 4. Sort by highScore (descending)
+    const sortedGames = validatedGames.sort((a, b) => b.highScore - a.highScore);
+
+    // 5. Get top 10 entries
+    const leaderboard = sortedGames.slice(0, 10);
+
+    if (!leaderboard.length) {
       return res.status(404).json({ message: 'No leaderboard data found' });
     }
 
-    // Sending the leaderboard as part of the response object
+    // 6. Send successful response
     res.status(200).json({ leaderboard });
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in getLeaderboard:', error.message);
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message // Include error details for debugging
+    });
   }
 };
 

@@ -1,3 +1,4 @@
+//client/src/components/Layout/Header.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-react';
@@ -70,14 +71,17 @@ const handleShare = () => {
         >
           <Info />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/leaderboard')}
-          className="text-white hover:text-yellow-400 transition-all duration-300"
-        >
-          <Trophy />
-        </Button>
+        {/* Render leaderboard icon only when authenticated */}
+        {isAuthenticated && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/leaderboard')}
+            className="text-white hover:text-yellow-400 transition-all duration-300"
+          >
+            <Trophy />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"

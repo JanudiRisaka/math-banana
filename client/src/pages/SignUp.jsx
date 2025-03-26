@@ -51,6 +51,17 @@ export default function SignUp() {
     try {
       const validatedData = signUpSchema.parse(formData);
       await signUp(validatedData.email, validatedData.password, validatedData.username);
+
+      console.log('SignIn response:', response); // Debugging log
+
+      if (!response || !response.token) {
+        throw new Error('No token received');
+      }
+
+      // Save the token to localStorage
+      localStorage.setItem('token', response.token);
+      console.log('Token saved:', response.token); // Debugging log
+
       navigate('/game');
     } catch (err) {
       if (err instanceof z.ZodError) {

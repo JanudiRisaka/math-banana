@@ -13,7 +13,7 @@ const AvatarSelector = ({ user, onSave }) => {
   const handleSave = async () => {
     try {
       const response = await axios.put(
-        `/users/profile/${user.id}`,
+        `/users/profile/${user._id}`,
         { avatar: avatarUrl },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );

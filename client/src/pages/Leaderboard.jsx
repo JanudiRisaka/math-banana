@@ -13,14 +13,12 @@ const Leaderboard = () => {
     fetchLeaderboard();
   }, []);
 
+// Leaderboard.jsx
 const fetchLeaderboard = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/game/leaderboard'); // Ensure full URL if necessary
-
-    console.log("API Response:", response.data); // Debugging log
+    const response = await axios.get('http://localhost:5000/game/leaderboard');
 
     if (response.data && Array.isArray(response.data.leaderboard)) {
-      // Sort leaderboard by highScore in descending order
       const sortedData = response.data.leaderboard.sort((a, b) => b.highScore - a.highScore);
 
       const data = sortedData.map(entry => ({
@@ -30,11 +28,12 @@ const fetchLeaderboard = async () => {
 
       setLeaderboard(data);
     } else {
-      throw new Error('Invalid leaderboard data');
+      throw new Error('Invalid leaderboard format');
     }
   } catch (error) {
-    console.error('Error fetching leaderboard:', error.message);
-    // Optionally, you can set a state variable to display an error message to the user
+    console.error('API Error:', error.response?.data || error.message);
+    // Optionally show error to user:
+    // setError(error.response?.data?.message || 'Failed to load leaderboard');
   } finally {
     setLoading(false);
   }
@@ -101,7 +100,7 @@ const fetchLeaderboard = async () => {
                     </div>
                   )}
                   <div>
-                    <h3 className="text-gray-300 font-semibold">{entry.user.username}</h3>
+                    <h3 className="text-gray-300 font-semibold"> {entry.user?.username || 'Anonymous'}</h3>
                     <div className="flex items-center text-gray-300 text-sm">
                       <Clock className="w-3 h-3 mr-1" />
                       <span>Last active: {entry.last_active}</span>

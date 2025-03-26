@@ -7,42 +7,39 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Get user details
+// Get user details
 export const getUserDetails = async (req, res) => {
   try {
     const userId = req.params.id;
-    console.log('Fetching user with ID:', userId);
 
     // Fetch user details
-    const user = await User.findById(userId).select('-password'); // Exclude password
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const user = await User.findById(userId).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Fetch game data for the user
-    const gameData = await Game.findOne({ user: userId });
+    // Fetch or create default game data
+    let gameData = await Game.findOne({ user: userId });
     if (!gameData) {
-      return res.status(404).json({ message: 'Game data not found' });
+      gameData = {
+        highScore: 0,
+        gamesPlayed: 0,
+        wins: 0,
+        dailyStreak: 0,
+        lastPlayed: null,
+        lastGameScore: 0,
+      };
     }
 
-    // Combine user and game data
-    const profile = {
+    // Convert Mongoose document to plain object
+    const responseData = {
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
       },
-      stats: {
-        highScore: gameData.highScore,
-        gamesPlayed: gameData.gamesPlayed,
-        wins: gameData.wins,
-        dailyStreak: gameData.dailyStreak,
-        lastPlayed: gameData.lastPlayed,
-        lastGameScore: gameData.lastGameScore,
-      },
+      stats: gameData.toObject ? gameData.toObject() : gameData
     };
 
-    console.log('Fetched Profile:', profile);
-    res.json(profile); // Return combined data
+    res.status(200).json(responseData);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -54,7 +51,7 @@ export const updateUserDetails = async (req, res) => {
   const { username, email, password, avatar } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -83,13 +80,13 @@ export const updateUserDetails = async (req, res) => {
 // Delete user
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    await User.findByIdAndDelete(req.user.id);
+    await User.findByIdAndDelete(req.user._id);
 
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
@@ -102,7 +99,7 @@ export const changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
