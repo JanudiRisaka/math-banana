@@ -22,6 +22,7 @@ req.user = { userId: decoded.userId };
   } catch (error) {
     // If token is invalid or expired, return an error response
     res.status(401).json({ message: 'Invalid or expired token' });
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };
 

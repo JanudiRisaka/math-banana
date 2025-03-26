@@ -99,7 +99,7 @@ const UpdateModal = ({
               <Button
                 variant="secondary"
                 onClick={generateAvatar}
-                className="text-white hover:text-yellow-400"
+                className="bg-sky-500 hover:bg-sky-700 ..."
               >
                 Generate Avatar
               </Button>
@@ -107,7 +107,7 @@ const UpdateModal = ({
           </div>
         </div>
 
-        <div className="flex justify-end space-x-4 mt-6">
+        <div className="flex justify-center space-x-4 mt-6">
           <Button
             variant="ghost"
             className="text-white hover:text-yellow-400"
@@ -116,9 +116,13 @@ const UpdateModal = ({
             Cancel
           </Button>
           <Button
-            variant="fantasy"
-            className="bg-yellow-400 hover:bg-yellow-500 text-black"
-            onClick={onUpdate}
+            variant="ghost"
+            className="focus:outline-none text-white bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:focus:ring-yellow-900"
+            onClick={() => onUpdate({
+              username: newUsername,
+              password: newPassword,
+              avatar: avatarUrl
+            })}
           >
             Update
           </Button>

@@ -91,42 +91,65 @@ const handleShare = () => {
         >
           <Share2 />
         </Button>
-        {isAuthenticated ? (
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => navigate('/profile')}
-              className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300"
-            >
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt="Avatar"
-                  className="w-8 h-8 rounded-full border-2 border-yellow-400"
-                />
-              ) : (
-                <User className="w-6 h-6 text-yellow-400" />
-              )}
-              <span className="text-white text-sm">{user?.name}</span>
-            </button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                logout();
-              }}
-              className="text-white hover:text-red-400"
-            >
-              Logout
-            </Button>
+{isAuthenticated ? (
+  <div className="flex items-center space-x-2">
+    <button
+      onClick={() => navigate('/profile')}
+      className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300"
+    >
+      {/* Avatar with smart fallback */}
+      <div className="relative">
+        <img
+          src={user?.avatar}
+          alt="User Avatar"
+          className="w-8 h-8 rounded-full border-2 border-yellow-400 object-cover"
+          onError={(e) => {
+            // Fallback 1: Directly to generated initials avatar
+            e.target.onerror = null;
+            e.target.src = `https://api.dicebear.com/8.x/initials/svg?seed=${user?.username}`;
+
+            // Fallback 2: If initials avatar fails, show default icon
+            e.target.addEventListener('error', () => {
+              e.target.style.display = 'none';
+              const fallbackIcon = document.createElement('div');
+              fallbackIcon.className = 'w-8 h-8 flex items-center justify-center bg-gray-700 rounded-full';
+              fallbackIcon.innerHTML = '<User class="w-5 h-5 text-yellow-400" />';
+              e.target.parentNode.insertBefore(fallbackIcon, e.target);
+            }, { once: true });
+          }}
+        />
+
+        {/* Loading state */}
+        {!user?.avatar && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-700 rounded-full animate-pulse">
+            <User className="w-5 h-5 text-yellow-400" />
           </div>
-        ) : (
-          <Button
-            variant="fantasy"
-            onClick={() => navigate('/signin')}
-            className="text-white"
-          >
-            Sign In
-          </Button>
         )}
+      </div>
+
+      <span className="text-white text-sm">
+        {user?.username || 'User'}
+      </span>
+    </button>
+    <Button
+      variant="ghost"
+      onClick={() => {
+        logout();
+      }}
+      className="text-white hover:text-red-400"
+    >
+      Logout
+    </Button>
+  </div>
+) : (
+  <Button
+    variant="fantasy"
+    onClick={() => navigate('/signin')}
+    className="text-white"
+  >
+    Sign In
+  </Button>
+)}
       </nav>
     </header>
   );

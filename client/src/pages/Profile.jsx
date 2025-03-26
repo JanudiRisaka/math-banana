@@ -11,7 +11,7 @@ import UpdateModal from '../components/Profile/UpdateModal';
 import DeleteModal from '../components/Profile/DeleteModal';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -45,24 +45,45 @@ const Profile = () => {
     return <div>Loading...</div>;
   }
 
-  const handleUpdateProfile = async () => {
+  const handleUpdateProfile = async (updateData) => {
     try {
-      const updatedData = { username: newUsername || user.username };
-      if (newPassword) updatedData.password = newPassword;
+      // Add debug logging
+      console.log('Update data:', updateData);
+      console.log('User ID:', user?.id);
 
       const response = await axios.put(
         `http://localhost:5000/user/profile/${user.id}`,
-        updatedData,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          username: updateData.username,
+          avatar: updateData.avatar,
+          ...(updateData.password && { password: updateData.password })
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
       );
 
-      setProfile(response.data);
-      setShowUpdateModal(false);
-      alert('Profile updated successfully');
+      // Update both local state and auth context
+      setProfile(prev => ({
+        ...prev,
+        user: response.data.user,
+        stats: prev.stats // Maintain existing stats
+      }));
+
+      updateUser(response.data.user);
+
+      // Show success alert and redirect
+      alert('Profile updated successfully!');
+      navigate('/profile'); // Redirect to refresh data
+
     } catch (error) {
-      console.error('Error updating profile:', error.message);
+      console.error('Update error:', error.response?.data || error.message);
+      navigate('/profile');
+    } finally {
+      // Close modal in both cases
+      setShowUpdateModal(false);
     }
   };
 
@@ -106,6 +127,7 @@ const Profile = () => {
           setNewUsername={setNewUsername}
           newPassword={newPassword}
           setNewPassword={setNewPassword}
+          currentAvatar={user?.avatar}
         />
       )}
 

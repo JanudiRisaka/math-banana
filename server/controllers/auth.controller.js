@@ -73,13 +73,21 @@ export const signin = async (req, res) => {
 // Verify token and get user data
 export const me = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId); // req.user is set in the authenticateToken middleware
+    const user = await User.findById(req.user.userId)
+      .select('-password') // Exclude password
+      .lean(); // Convert to plain object
+
     if (!user) return res.status(404).json({ message: 'User not found' });
+
     res.status(200).json({
-      user: { id: user._id, username: user.username, email: user.email },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar // Include avatar
+      }
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Failed to fetch user data' });
   }
 };

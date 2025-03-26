@@ -79,6 +79,14 @@ export const AuthProvider = ({ children }) => {
     navigate('/'); // Redirect to Sign In page
   };
 
+  const updateUser = (newUserData) => {
+    setUser(prev => ({
+      ...prev,
+      ...newUserData
+    }));
+  };
+
+
   return (
     <AuthContext.Provider
       value={{
@@ -87,6 +95,7 @@ export const AuthProvider = ({ children }) => {
         signUp,
         signIn,
         logout,
+        updateUser,
         loading
       }}
     >
