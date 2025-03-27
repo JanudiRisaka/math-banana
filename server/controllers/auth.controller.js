@@ -3,6 +3,8 @@ import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '../services/email.service.js';
 
 dotenv.config();
 
@@ -11,29 +13,75 @@ export const signup = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Check if the user already exists
+    // Check existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create verification token
+    const verificationToken = crypto.randomBytes(20).toString('hex');
+    const verificationTokenExpires = Date.now() + 3600000; // 1 hour
 
-    // Create a new user
-    const newUser = new User({ username, email, password: hashedPassword });
+    // Create new user with verification data
+    const newUser = new User({
+      username,
+      email,
+      password: await bcrypt.hash(password, 10),
+      verificationToken,
+      verificationTokenExpires
+    });
+
     await newUser.save();
 
-    // Generate token
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '5h' });
+    // Send verification email
+    await sendVerificationEmail(newUser.email, verificationToken);
 
     res.status(201).json({
-      message: 'Signup successful',
-      user: { id: newUser._id, username: newUser.username, email: newUser.email },
-      token, // Send token so user can be automatically logged in
-    });  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+      message: "Verification email sent",
+      userId: newUser._id
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// New verification endpoint
+// controllers/auth.controller.js
+// 修正箇所: VerifyEmail controller
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Missing verification token' });
+    }
+
+    const user = await User.findOne({
+      verificationToken: token,
+      verificationTokenExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save();
+
+    // Return JSON response instead of redirect
+    res.status(200).json({
+      message: 'Email verified successfully!',
+      verified: true
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Email verification failed: ' + error.message
+    });
   }
 };
 
@@ -43,20 +91,21 @@ export const signin = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (!await bcrypt.compare(password, user.password)) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: 'Email not verified. Check your email for verification link'
+      });
+    }
 
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, username: user.username },
+      { userId: user._id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: '4h' } // Token expires in 4 hours
+      { expiresIn: '4h' }
     );
 
     res.status(200).json({
@@ -65,8 +114,7 @@ export const signin = async (req, res) => {
       user: { id: user._id, username: user.username, email: user.email },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
+    res.status(500).json({ message: error.message });
   }
 };
 

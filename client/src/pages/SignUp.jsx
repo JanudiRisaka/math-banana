@@ -50,24 +50,23 @@ export default function SignUp() {
 
     try {
       const validatedData = signUpSchema.parse(formData);
-      await signUp(validatedData.email, validatedData.password, validatedData.username);
+      const response = await signUp(
+        validatedData.email,
+        validatedData.password,
+        validatedData.username
+      );
 
-      console.log('SignIn response:', response); // Debugging log
-
-      if (!response || !response.token) {
-        throw new Error('No token received');
+      // 修正箇所: Handle response correctly
+      if (response?.data?.userId) {
+        navigate('/verify-email-pending', {
+          state: { email: validatedData.email }
+        });
       }
-
-      // Save the token to localStorage
-      localStorage.setItem('token', response.token);
-      console.log('Token saved:', response.token); // Debugging log
-
-      navigate('/game');
     } catch (err) {
       if (err instanceof z.ZodError) {
         setError(err.errors[0].message);
       } else {
-        setError(err.message || 'Failed to create account');
+        setError(err.response?.data?.message || 'Failed to create account');
       }
     } finally {
       setLoading(false);

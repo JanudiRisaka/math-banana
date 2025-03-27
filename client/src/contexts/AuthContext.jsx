@@ -47,11 +47,12 @@ export const AuthProvider = ({ children }) => {
         password,
         username,
       });
-      if (res.data && res.data.token) {
-      localStorage.setItem('token', res.data.token);
-      setUser(res.data.user);
-      navigate('/game');
-    }
+
+      if (res.data?.userId) {
+        navigate('/verify-email-pending', {
+          state: { email }
+        });
+      }
     } catch (error) {
       throw error.response?.data?.message || 'Signup failed';
     }

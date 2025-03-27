@@ -9,6 +9,7 @@ import authenticateToken from './middleware/auth.middleware.js';
 import authRoutes from './routes/auth.route.js';
 import userRoutes from './routes/user.route.js';
 import gameRoutes from './routes/game.route.js';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +22,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: 'Too many attempts, please try again later'
+});
+app.use('/auth/signup', apiLimiter);
+app.use('/auth/signin', apiLimiter);
 app.use('/auth', authRoutes);
 app.use('/user', userRoutes);
 app.use('/game', gameRoutes);
