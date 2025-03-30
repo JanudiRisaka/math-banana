@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Crown, Medal, User, Clock } from 'lucide-react';
-import axios from 'axios'; // For API calls
-import { useAuth } from '../contexts/AuthContext';
+import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -16,7 +16,7 @@ const Leaderboard = () => {
 // Leaderboard.jsx
 const fetchLeaderboard = async () => {
   try {
-    const response = await axios.get('http://localhost:5000/game/leaderboard');
+    const response = await api.get('http://localhost:5000/game/leaderboard');
 
     if (response.data && Array.isArray(response.data.leaderboard)) {
       const sortedData = response.data.leaderboard.sort((a, b) => b.highScore - a.highScore);

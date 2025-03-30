@@ -1,147 +1,341 @@
 // controllers/auth.controller.js
 import User from '../models/user.model.js';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import crypto from 'crypto';
-import { sendVerificationEmail } from '../services/email.service.js';
+import bcryptjs from "bcryptjs";
+import transporter from '../config/nodemailer.js'
+import { error } from 'console';
+import userModel from '../models/user.model.js';
 
 dotenv.config();
 
 // User Registration (signup)
 export const signup = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
 
-    // Check existing user
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+	const { username, email, password, confirmPassword } = req.body;
 
-    // Create verification token
-    const verificationToken = crypto.randomBytes(20).toString('hex');
-    const verificationTokenExpires = Date.now() + 3600000; // 1 hour
+	if (!username || !email || !password || !confirmPassword){
+		return res.json({
+			success: false,
+			message: 'All the fields required'
+		})
+	}
 
-    // Create new user with verification data
-    const newUser = new User({
-      username,
-      email,
-      password: await bcrypt.hash(password, 10),
-      verificationToken,
-      verificationTokenExpires
-    });
+	// Check if passwords match after trimming
+	if (password !== confirmPassword) {
+		return res.status(400).json({
+		  success: false,
+		  message: "Passwords do not match",
+		  field: "confirmPassword"
+		});
+	}
 
-    await newUser.save();
+	// Validate username length
+	if (username.length < 3) {
+		return res.status(400).json({
+		  success: false,
+		  message: "Username must be at least 3 characters"
+		});
+	}
 
-    // Send verification email
-    await sendVerificationEmail(newUser.email, verificationToken);
+	try {
+	// Check for existing user
+	const existingUser = await User.findOne({email});
 
-    res.status(201).json({
-      message: "Verification email sent",
-      userId: newUser._id
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+	if (existingUser) {
+		return res.json({
+			success: false,
+			message: "User already exists"
+		  });
+	}
+
+	const hashedPassword = await bcryptjs.hash(password, 10);
+
+	const user = new User({
+		username: username,
+		email: email,
+		password: hashedPassword
+	});
+
+	await user.save();
+	console.log('User created:', user.email);
+	res.status(201).json({
+		success: true,
+		message: 'Registration successful. Please verify your email.',
+		email: user.email
+	  });
+
+	} catch (error) {
+		return res.json({ success: false, message: error.message });
+
+	}
 };
 
-// New verification endpoint
-// controllers/auth.controller.js
-// 修正箇所: VerifyEmail controller
-export const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.query;
-
-    if (!token) {
-      return res.status(400).json({ message: 'Missing verification token' });
-    }
-
-    const user = await User.findOne({
-      verificationToken: token,
-      verificationTokenExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({
-        message: 'Invalid or expired verification token'
-      });
-    }
-
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
-    await user.save();
-
-    // Return JSON response instead of redirect
-    res.status(200).json({
-      message: 'Email verified successfully!',
-      verified: true
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Email verification failed: ' + error.message
-    });
-  }
-};
-
-// User Login (signin)
 export const signin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
 
-    if (!user) return res.status(400).json({ message: 'User not found' });
-    if (!await bcrypt.compare(password, user.password)) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-    if (!user.isVerified) {
-      return res.status(403).json({
-        message: 'Email not verified. Check your email for verification link'
-      });
-    }
+	const { email, password } = req.body;
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '4h' }
-    );
+	if (!email || !password){
+		return res.json({
+			success: false,
+			message: 'Email and password are required'
+		})
+	}
 
-    res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: { id: user._id, username: user.username, email: user.email },
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+	try {
+
+		const user = await User.findOne({email});
+
+		if (!user) {
+			return res.json({
+				success: false,
+				message: "Invalid email"
+			});
+		}
+
+		const isPasswordMatch = await bcryptjs.compare(password, user.password);
+
+		if (!isPasswordMatch) {
+			return res.json({ success: false, message: "Invalid password" });
+		}
+
+	// Generate token
+	const token = jwt.sign(
+		{ userId: user._id },
+		process.env.JWT_SECRET,
+		{ expiresIn: '7h' }
+	);
+
+	res.cookie('token', token, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === 'production',
+		sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+		maxAge: 7 * 24 * 60 * 60 * 1000
+	});
+
+		res.json({success: true});
+
+	} catch (error) {
+		console.log("Error in signup ", error);
+		res.status(400).json({ success: false, message: error.message });
+	}
+};
+
+export const logout = async (req, res) => {
+	try {
+		res.clearCookie('token' ,  {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+		});
+
+		return res.json({ success: true, message: "Logged out successfully" });
+
+	} catch {
+		return res.json({ success: false, message: error.message });
+	}
+};
+
+//send verification OTP to the user's email
+export const sendVerifyOtp = async (req, res) => {
+	try {
+		const { email } = req.body; // Get email from request body
+
+		const user = await User.findOne({ email });
+
+		if (!user) {
+		  return res.status(404).json({
+			success: false,
+			message: "User not found"
+		  });
+		}
+
+		if (user.isAccountVerified) {
+		  return res.json({
+			success: false,
+			message: "Account already verified"
+		  });
+		}
+
+		const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+		user.verifyOtp = otp;
+		user.verifyOtpExpireAt = Date.now() + 3 * 60 * 1000; // 3 minutes
+
+		await user.save();
+
+		const mailOption = {
+			from: process.env.SENDER_EMAIL,
+			to: user.email,
+			subject: 'Account Verification OTP',
+			text: `Your OTP is ${otp}. Verify your account using this OTP. (valid for 3 minutes)`
+		}
+
+		await transporter.sendMail(mailOption);
+
+		return res.json({ success: true, message: "OTP sent to your email" });
+
+	} catch (error) {
+		return res.json({ success: false, message: error.message });
+	}
+}
+
+export const verifyEmail = async (req, res) => {
+	const { email, otp } = req.body;
+
+	if(!email || !otp){
+		return res.json({ success: false, message: 'Missing Details'});
+	}
+
+	try {
+		const user = await User.findOne({ email });
+
+		if(!user) {
+			return res.json({ success: false, message: 'Missing User not found'});
+		}
+
+		if(user.verifyOtp === '' || user.verifyOtp !== otp) {
+			return res.json({ success: false, message: 'Invalid OTP'});
+		}
+
+		if(user.verifyOtpExpireAt < Date.now()) {
+			return res.json({ success: false, message: 'OTP expired'});
+		}
+
+		user.isAccountVerified = true;
+		user.verifyOtp = '';
+		user.verifyOtpExpireAt = 0;
+
+		await user.save();
+
+		// Generate token after verification
+		const token = jwt.sign(
+			{ userId: user._id },
+			process.env.JWT_SECRET,
+			{ expiresIn: '7h' }
+		);
+
+		// Set cookie
+		res.cookie('token', token, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+			maxAge: 7 * 24 * 60 * 60 * 1000
+		});
+
+    	// Send welcome email
+    	const welcomeMail = {
+			from: process.env.SENDER_EMAIL,
+			to: user.email,
+			subject: 'Welcome to Math Banana!',
+			text: `Welcome ${user.username}! Your account has been successfully verified.`
+	  	};
+	  	await transporter.sendMail(welcomeMail);
+
+		res.json({
+			success: true,
+			message: "Email verified successfully",
+			user: {
+			  id: user._id,
+			  username: user.username,
+			  email: user.email
+			}
+		});
+
+	} catch (error) {
+		return res.json({ success: false, message: error.message });
+	}
+}
+
+// Add proper authentication check
+export const isAuthenticated = async (req, res) => {
+	try {
+	  // The userAuth middleware already verified the token
+	  // Return user status with basic info
+	  res.json({
+		success: true,
+		user: req.user // From userAuth middleware
+	  });
+	} catch (error) {
+	  res.status(500).json({
+		success: false,
+		message: error.message
+	  });
+	}
   }
-};
 
-// Verify token and get user data
-export const me = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId)
-      .select('-password') // Exclude password
-      .lean(); // Convert to plain object
+// Send Password Reset OTP
+export const sendResetOtp = async (req, res) => {
+	const {email} = req.body;
 
-    if (!user) return res.status(404).json({ message: 'User not found' });
+	if(!email) {
+		return res.json({success:false, message: 'Email is required'})
+	}
 
-    res.status(200).json({
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        avatar: user.avatar // Include avatar
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch user data' });
-  }
-};
+	try {
+		const user = await User.findOne({email});
 
-// Logout (client-side token removal)
-export const logout = (req, res) => {
-  // Inform the client to remove the token on the client-side
-  res.status(200).json({ message: 'Logout successful' });
-};
+		if(!user) {
+			return res.json({success:false, message: 'User not found'})
+		}
+
+		const otp = String(Math.floor(100000 + Math.random() * 900000));
+
+		user.resetOtp = otp;
+		user.resetOtpExpiredAt = Date.now() + 15 * 60 * 1000;
+
+		await user.save();
+
+		const mailOption = {
+			from: process.env.SENDER_EMAIL,
+			to: user.email,
+			subject: 'Password Reset OTP',
+			text: `Your OTP for resetting your password is ${otp}. Use this OTP to proceed with resetting your password.`
+		}
+
+		await transporter.sendMail(mailOption);
+
+		return res.json({success: true, message: 'OTP sent to your email'})
+
+	} catch (error) {
+		return res.json({ success: false, message: error.message });
+	}
+}
+
+//Reset User Password
+export const resetPassword = async (req, res) => {
+	const {email, otp, newPassword} = req.body;
+
+	if(!email || !otp || !newPassword) {
+		return res.json({ success: false, message: 'Email, OTP, and new password are required' });
+	}
+
+	try {
+		const user = await User.findOne({email});
+
+		if(!user) {
+			return res.json({ success: false, message: 'User not found' });
+		}
+
+		if (user.resetOtp === "" || user.resetOtp !== otp) {
+			return res.json({ success: false, message: 'Invalid OTP' });
+		}
+
+		if (user.resetOtpExpiredAt < Date.now()) {
+			return res.json({ success: false, message: 'OTP expired' });
+		}
+
+		const hashedPassword = await bcryptjs.hash(newPassword, 10);
+
+		user.password = hashedPassword;
+		user.resetOtp = '';
+		user.resetOtpExpiredAt = 0;
+
+		await user.save();
+
+		return res.json({ success: true, message: 'Password has been reset successfully' });
+
+	} catch (error) {
+		return res.json({ success: false, message: error.message });
+	}
+}

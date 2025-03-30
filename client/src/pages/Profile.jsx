@@ -1,8 +1,8 @@
 //client/src/pages/Profile.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import ProfileHeader from '../components/Profile/ProfileHeader';
 import ProfileStats from '../components/Profile/ProfileStats';
 import RecentActivity from '../components/Profile/RecentActivity';
@@ -23,7 +23,7 @@ const Profile = () => {
     if (user) {
       const fetchProfile = async () => {
         try {
-          const response = await axios.get(`http://localhost:5000/user/profile/${user.id}`, {
+          const response = await api.get(`http://localhost:5000/user/profile/${user.id}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           });
           setProfile(response.data);
@@ -37,7 +37,7 @@ const Profile = () => {
   }, [user]);
 
   if (!user) {
-    navigate('/login');
+    navigate('/signup');
     return null;
   }
 
@@ -51,7 +51,7 @@ const Profile = () => {
       console.log('Update data:', updateData);
       console.log('User ID:', user?.id);
 
-      const response = await axios.put(
+      const response = await api.put(
         `http://localhost:5000/user/profile/${user.id}`,
         {
           username: updateData.username,
@@ -89,11 +89,11 @@ const Profile = () => {
 
   const handleDeleteAccount = async () => {
     try {
-      await axios.delete(`/user/profile/${user.id}`, {
+      await api.delete(`/user/profile/${user.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       logout();
-      navigate('/login');
+      navigate('/signup');
       alert('Account deleted successfully');
     } catch (error) {
       console.error('Error deleting account:', error.message);

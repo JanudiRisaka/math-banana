@@ -1,64 +1,81 @@
 import Game from '../models/game.model.js'; // Import the Game model
 import User from '../models/user.model.js'; // Import the User model (if needed)
 
+// controllers/game.controller.js
 export const createScore = async (req, res) => {
   try {
-    console.log("Request body:", req.body); // Debugging
-
     const { score, won = false } = req.body;
-    const userId = req.user.userId;
+    const userId = req.userId;
 
+    // Enhanced validation
     if (typeof score !== "number" || score < 0) {
-      return res.status(400).json({ message: "Invalid score" });
-    }
-
-    let gameData = await Game.findOne({ user: userId });
-    const today = new Date();
-    const oneDay = 24 * 60 * 60 * 1000;
-
-    if (gameData) {
-      const lastPlayed = gameData.lastPlayed ? new Date(gameData.lastPlayed) : null;
-
-      if (lastPlayed && today - lastPlayed < 2 * oneDay) {
-        if (today - lastPlayed >= oneDay) {
-          gameData.dailyStreak += 1;
-        }
-      } else {
-        gameData.dailyStreak = 1;
-      }
-    } else {
-      gameData = new Game({
-        user: userId,
-        score,
-        gamesPlayed: 0,
-        wins: 0,
-        lastGameScore: score,
-        highScore: score,
-        dailyStreak: 1,
-        lastPlayed: today,
+      return res.status(400).json({
+        success: false,
+        message: "Invalid score value",
+        received: score
       });
     }
 
-    // Update game data
-    gameData.score = score;
-    gameData.gamesPlayed += 1;
-    if (won) gameData.wins += 1;
-    gameData.lastGameScore = score;
-    gameData.highScore = Math.max(gameData.highScore, score);
-    gameData.lastPlayed = today;
+    // Find or create game data with proper defaults
+    let gameData = await Game.findOneAndUpdate(
+      { user: userId },
+      {
+        $setOnInsert: {
+          user: userId,
+          score: 0,
+          gamesPlayed: 0,
+          wins: 0,
+          highScore: 0,
+          dailyStreak: 0
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true
+      }
+    );
 
-    await gameData.save();
+    // Update statistics
+    const updates = {
+      $inc: {
+        score: Number(score),
+        gamesPlayed: 1,
+        ...(won && { wins: 1 })
+      },
+      $max: { highScore: gameData.highScore + Number(score) },
+      $set: { lastPlayed: new Date() }
+    };
+
+    // Update streak calculation
+    const lastPlayedDate = gameData.lastPlayed || new Date(0);
+    const dayDifference = Math.floor((Date.now() - lastPlayedDate) / (1000 * 3600 * 24));
+
+    updates.$set.dailyStreak = dayDifference === 1 ?
+      gameData.dailyStreak + 1 :
+      dayDifference === 0 ? gameData.dailyStreak : 1;
+
+    const updatedGame = await Game.findOneAndUpdate(
+      { user: userId },
+      updates,
+      { new: true }
+    ).populate('user', 'username');
 
     res.status(200).json({
-      message: "Game data updated successfully",
-      data: gameData,
+      success: true,
+      message: "Score updated successfully",
+      data: updatedGame
     });
   } catch (error) {
-    console.error("Error saving score:", error);
-    res.status(500).json({ message: error.message });
+    console.error("Score save error:", error);
+    res.status(500).json({
+      success: false,
+      message: process.env.NODE_ENV === 'development' ?
+        error.message :
+        "Failed to save score"
+    });
   }
 };
-
 
 // Get the leaderboard (sorted by highest score)
 // controllers/game.controller.js
@@ -103,36 +120,28 @@ export const getLeaderboard = async (req, res) => {
 };
 
 
-// Fetch user stats
 export const getUserStats = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const gameData = await Game.findOne({ user: userId });
+    const gameData = await Game.findOne({ user: req.userId })
+      .select('-__v -_id -user')
+      .lean();
 
     if (!gameData) {
-      return res.status(404).json({ message: 'No game data found for this user' });
+      return res.status(404).json({
+        success: false,
+        message: 'No game data found'
+      });
     }
 
-    res.status(200).json({ gameData });
+    res.status(200).json({
+      success: true,
+      data: gameData
+    });
   } catch (error) {
     console.error('Error fetching user stats:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Get all scores for a specific user
-export const getScoreForUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const scores = await Game.find({ user: userId });
-
-    if (!scores.length) {
-      return res.status(404).json({ message: 'No scores found for this user' });
-    }
-
-    res.status(200).json({ scores });
-  } catch (error) {
-    console.error('Error fetching user scores:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
 };

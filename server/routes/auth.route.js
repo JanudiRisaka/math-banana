@@ -1,15 +1,25 @@
-// routes/auth.route.js
-import express from 'express';
-import { signup, signin, me, logout } from '../controllers/auth.controller.js';
-import authenticateToken from '../middleware/auth.middleware.js';
-import { verifyEmail } from '../controllers/auth.controller.js';
+import express from "express";
+import {
+	signup,
+	signin,
+	logout,
+	sendVerifyOtp,
+	verifyEmail,
+	isAuthenticated,
+	sendResetOtp,
+	resetPassword,
+} from "../controllers/auth.controller.js";
+import userAuth from "../middleware/userAuth.js";
 
-const router = express.Router();
+const authRoutes = express.Router();
 
-router.get('/verify-email', verifyEmail);
-router.post('/signup', signup);
-router.post('/signin', signin);
-router.get('/me', authenticateToken, me);
-router.post('/logout', logout);
+authRoutes.post("/signup", signup);
+authRoutes.post("/signin", signin);
+authRoutes.post("/logout", logout);
+authRoutes.post("/send-verify-otp", sendVerifyOtp);
+authRoutes.post("/verify-email", verifyEmail);
+authRoutes.get("/is-auth", userAuth, isAuthenticated);
+authRoutes.post("/send-reset-otp", sendResetOtp);
+authRoutes.post("/reset-password", resetPassword);
 
-export default router;
+export default authRoutes;

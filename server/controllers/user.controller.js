@@ -1,20 +1,47 @@
-import User from '../models/user.model.js';  // Correct import for user model
-import Game from '../models/game.model.js';  // Correct import for game model
+import User from '../models/user.model.js';
+import Game from '../models/game.model.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+export const getUserData = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
+
+		if(!user) {
+			return res.json({ success: false, message: 'User not found' });
+		}
+
+    res.json({
+      success: true,
+      userData: {
+        name: user.username,
+        isAccountVerified: user.isAccountVerified,
+        email: user.email
+        //avatar: avatar
+      }
+    })
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+}
+
+
+
+
+
 // Get user details
 export const getUserDetails = async (req, res) => {
   try {
-    const userId = req.params.id;
-
-    // Fetch user details
+    const userId = req.userId;
     const user = await User.findById(userId).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
     // Fetch or create default game data
     let gameData = await Game.findOne({ user: userId });
     if (!gameData) {
@@ -41,7 +68,8 @@ export const getUserDetails = async (req, res) => {
 
     res.status(200).json(responseData);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching user details:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -51,15 +79,13 @@ export const updateUserDetails = async (req, res) => {
   const { username, email, password, avatar } = req.body;
 
   try {
-    // 1. Use URL parameter instead of token ID
-    const user = await User.findById(req.params.id);
+    // 1. Get user ID from verified token
+    const userId = req.userId;
 
-    // 2. Add authorization check
-    if (req.user.userId !== user._id.toString()) {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
+    // 2. Find user by ID from token
+    const user = await User.findById(userId);
 
-    // 3. Update fields only if they exist in request
+    // 3. Update fields
     if (username) user.username = username;
     if (email) user.email = email;
     if (password) {
@@ -87,23 +113,22 @@ export const updateUserDetails = async (req, res) => {
 // Delete user
 export const deleteUser = async (req, res) => {
   try {
-    if (req.params.id !== req.user.userId) {
-      return res.status(403).json({ message: 'Unauthorized to delete this profile' });
+    const userId = req.userId;
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const user = await User.findById(req.user.userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    await User.findByIdAndDelete(req.user.userId);
-
-    res.status(200).json({ message: 'User deleted successfully' });
+    res.clearCookie("token");
+    // Respond with success
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error deleting user:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 // Change password
 export const changePassword = async (req, res) => {

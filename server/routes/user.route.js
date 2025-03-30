@@ -1,20 +1,20 @@
 // routes/user.routes.js
-import authenticateToken from '../middleware/auth.middleware.js';
 import express from 'express';
-const router = express.Router();
 import {
   getUserDetails,
   updateUserDetails,
-  deleteUser
+  deleteUser,
+  getUserData
 } from '../controllers/user.controller.js';
+import userAuth from '../middleware/userAuth.js';
 
-// Get the authenticated user's profile using user ID
-router.get('/profile/:id', authenticateToken, getUserDetails);
+const userRouter = express.Router();
 
-// Update the authenticated user's profile
-router.put('/profile/:id', authenticateToken, updateUserDetails);
+userRouter.get('/data', userAuth, getUserData);
 
-// Delete the authenticated user's profile
-router.delete('/profile/:id', authenticateToken, deleteUser); // Modified route for deletion
 
-export default router;
+userRouter.put('/profile', updateUserDetails);
+userRouter.get('/profile', getUserDetails);
+userRouter.delete('/profile', deleteUser);
+
+export default userRouter;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { Button } from './Button'; // Adjust import path as needed
 
 const AvatarSelector = ({ user, onSave }) => {
@@ -19,7 +19,7 @@ const AvatarSelector = ({ user, onSave }) => {
   // Save avatar to backend
   const handleSave = async () => {
     try {
-      const response = await axios.put(
+      const response = await api.put(
         `http://localhost:5000/user/profile/${user.id}`,
         { avatar: avatarUrl },
         {

@@ -19,26 +19,30 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String
     },
-    lastLogic: {
-      type: Date,
-      required: true
+    verifyOtp: {
+      type: String,
+      default: ''
     },
-    isVerified: {
+    verifyOtpExpireAt: {
+      type: Number,
+      default: 0
+    },
+    isAccountVerified: {
       type: Boolean,
       default: false
     },
-    resetPasswordToken: String,
-    resetPasswordExpiresAt: Date,
-    verificationToken: String,
-    verificationTokenExpiresAt: Date
+    resetOtp: {
+      type: String,
+      default: ''
+    },
+    resetOtpExpiredAt: {
+      type: Number,
+      default: 0
+    },
   },
   { timestamps: true }
 );
-userSchema.index(
-  { verificationToken: 1 },
-  {
-    partialFilterExpression: { verificationToken: { $exists: true } },
-    expireAfterSeconds: 3600 // Auto-expire after 1 hour
-  }
-);
-export default mongoose.model('User', userSchema);
+
+const userModel = mongoose.models.user || mongoose.model('user', userSchema);
+
+export default userModel;

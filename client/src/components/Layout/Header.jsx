@@ -4,31 +4,29 @@ import { useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-react';
 import { Button } from './Button';
 import { useGameStore } from '../../stores/useGameStore.js';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useAudio } from '../../hooks/useAudio.js';
 import backgroundMusic from '../../assets/Genshin Impact Main Theme.mp3';
 
 function Header() {
-  const { user, isAuthenticated, login, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const isAuthenticated = !!user;
   const { isMuted: storeMuted, toggleMute: storeToggleMute, resetGame } = useGameStore();
   const [audioMuted, audioToggleMute] = useAudio(backgroundMusic, storeMuted);
   const navigate = useNavigate();
 
-const handleShare = () => {
-    const options = {
-      title: 'Share via',
-      message: 'Check out this awesome content!',
-      url: 'http://localhost:5173/',  // URL to share
-      social: Share.Social.EMAIL,      // This is just an example, you can specify any platform
-    };
-
-    Share.open(options)
-      .then((res) => {
-        console.log('Shared successfully:', res);
-      })
-      .catch((err) => {
-        err && console.log('Error sharing:', err);
-      });
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Math Banana',
+        text: 'Check out this awesome math game!',
+        url: window.location.href
+      }).catch(console.error);
+    } else {
+      // Fallback for browsers without Share API
+      navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied to clipboard!');
+    }
   };
 
   const handleLogoClick = () => {

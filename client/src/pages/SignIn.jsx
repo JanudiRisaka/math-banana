@@ -1,58 +1,54 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { z } from 'zod';
+import toast from 'react-hot-toast';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const [isLoading, setIsLoading] = useState(false); // Local loading state
   const navigate = useNavigate();
+  const { signin } = useAuth();
 
   const handleLogoClick = () => {
-    navigate('/'); // Redirect to home or any other path you want
+    navigate('/');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     setError('');
 
     try {
-      const validatedData = signInSchema.parse({ email, password });
-      const response = await signIn(validatedData.email, validatedData.password, rememberMe);
+      // Validate with Zod
+      signInSchema.parse({ email, password });
 
-      console.log('SignIn response:', response); // Debugging log
+      const response = await signin(email, password); // Pass raw values
 
-      if (!response || !response.token) {
-        throw new Error('No token received');
+      if (response?.success) {
+        toast.success('Signed in successfully!');
+        navigate('/dashboard');
       }
 
-      // Save the token to localStorage
-      localStorage.setItem('token', response.token);
-      console.log('Token saved:', response.token); // Debugging log
-
-      // Redirect to the game page
-      navigate('/game');
     } catch (err) {
+      let errorMessage = err.message;
       if (err instanceof z.ZodError) {
-        setError(err.errors[0].message);
-      } else {
-        setError(err.message || 'Failed to sign in');
+        errorMessage = err.errors[0].message;
       }
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -115,6 +111,7 @@ export default function SignIn() {
                   className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400/50"
                   placeholder="Enter your email"
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -133,23 +130,12 @@ export default function SignIn() {
                   className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400/50"
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-yellow-400 focus:ring-yellow-400"
-                />
-                <label htmlFor="remember" className="ml-2 text-sm text-gray-300">
-                  Remember me
-                </label>
-              </div>
               <Link
                 to="/forgot-password"
                 className="text-sm text-yellow-400 hover:text-yellow-300"
@@ -162,9 +148,9 @@ export default function SignIn() {
               type="submit"
               variant="fantasy"
               className="w-full py-2 flex items-center justify-center"
-              disabled={loading}
+              disabled={isLoading}
             >
-              {loading ? (
+              {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 'Sign In'

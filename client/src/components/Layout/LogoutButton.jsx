@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { LogOut, Loader2 } from 'lucide-react';
 import { Button } from './Button';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const LogoutButton = ({ variant = 'ghost', className }) => {
   const [isLoading, setIsLoading] = useState(false);
