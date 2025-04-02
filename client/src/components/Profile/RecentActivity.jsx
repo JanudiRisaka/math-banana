@@ -38,7 +38,7 @@ const RecentActivity = ({ stats }) => {
       </h2>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
           <div className="flex items-center gap-3">
             <Award className="w-6 h-6 text-green-400" />
             <span className="text-gray-300">Last Game Score</span>
@@ -48,7 +48,7 @@ const RecentActivity = ({ stats }) => {
           </span>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
           <div className="flex items-center gap-3">
             <Clock className="w-6 h-6 text-blue-400" />
             <span className="text-gray-300">Last Played</span>
@@ -58,7 +58,7 @@ const RecentActivity = ({ stats }) => {
           </span>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 text-center text-orange-400 font-bold">🔥</div>
             <span className="text-gray-300">Daily Streak</span>

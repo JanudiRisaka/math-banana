@@ -14,7 +14,7 @@ const ProfileHeader = ({ user }) => {
           <img
             src={safeUser.avatar}
             alt="User Avatar"
-            className="w-16 h-16 rounded-full border-2 border-banana-dark"
+            className="w-16 h-16 rounded-full shadow-xl"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = `https://api.dicebear.com/8.x/initials/svg?seed=${safeUser.username}`;

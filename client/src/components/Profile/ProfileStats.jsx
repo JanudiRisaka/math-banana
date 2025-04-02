@@ -34,7 +34,7 @@ const ProfileStats = ({ stats }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
       {/* High Score */}
-      <div className="text-center p-4 bg-gray-800 rounded-lg transition-all hover:bg-gray-700">
+      <div className="text-center p-4 shadow-xl rounded-lg transition-all">
         <Trophy className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
         <p className="text-sm text-gray-300">High Score</p>
         <p className="text-xl font-bold text-white">
@@ -43,7 +43,7 @@ const ProfileStats = ({ stats }) => {
       </div>
 
       {/* Games Played */}
-      <div className="text-center p-4 bg-gray-800 rounded-lg transition-all hover:bg-gray-700">
+      <div className="text-center p-4 shadow-xl rounded-lg transition-all ">
         <GamepadIcon className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
         <p className="text-sm text-gray-300">Games Played</p>
         <p className="text-xl font-bold text-white">
@@ -52,7 +52,7 @@ const ProfileStats = ({ stats }) => {
       </div>
 
       {/* Average Score */}
-      <div className="text-center p-4 bg-gray-800 rounded-lg transition-all hover:bg-gray-700">
+      <div className="text-center p-4 shadow-xl rounded-lg transition-all ">
         <Trophy className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
         <p className="text-sm text-gray-300">Avg. Score</p>
         <p className="text-xl font-bold text-white">
@@ -63,7 +63,7 @@ const ProfileStats = ({ stats }) => {
       </div>
 
       {/* Last Played */}
-      <div className="text-center p-4 bg-gray-800 rounded-lg transition-all hover:bg-gray-700">
+      <div className="text-center p-4 shadow-xl rounded-lg transition-all ">
         <Calendar className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
         <p className="text-sm text-gray-300">Last Played</p>
         <p className="text-xl font-bold text-white">

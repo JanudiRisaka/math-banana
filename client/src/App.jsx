@@ -14,6 +14,7 @@ import Footer from './components/Layout/Footer';
 import Home from './pages/Home';
 import EmailVerify from './pages/EmailVerify';
 import ResetPassword from './pages/ResetPassword';
+import SparkleCursor from './components/Layout/SparkleCursor';
 // Assets
 import bg from './assets/background.jpg';
 // Store
@@ -34,6 +35,7 @@ export default function App() {
         background: 'linear-gradient(to bottom, #001B3D/90, #000B1A/90)'
       }}
     >
+ <SparkleCursor />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
