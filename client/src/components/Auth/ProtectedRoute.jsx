@@ -1,21 +1,44 @@
-// src/components/auth/ProtectedRoute.jsx
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Change this import
+import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading, refreshUserData } = useAuth();
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/signin');
-    }
-  }, [user, isLoading, navigate]);
+    const verifyAuth = async () => {
+      if (!isLoading && !isAuthenticated) {
+        // Not authenticated, will redirect
+        setIsVerifying(false);
+        return;
+      } else if (!isLoading && isAuthenticated) {
+        // Already authenticated, no need to verify again
+        setIsVerifying(false);
+        return;
+      }
 
-  if (isLoading) return <LoadingSpinner />; // Add loading component
+      // Wait for loading to finish
+      setIsVerifying(false);
+    };
 
-  return user ? children : null;
+    verifyAuth();
+  }, [isLoading, isAuthenticated, refreshUserData]);
+
+  if (isLoading || isVerifying) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="w-12 h-12 animate-spin text-white" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

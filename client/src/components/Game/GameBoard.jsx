@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Timer, Trophy } from 'lucide-react';
 import { Button } from '../Layout/Button';
-import { useGameStore } from '../../stores/useGameStore';
+import { useGame } from '../../context/GameContext';
 
 const DIFFICULTY_SETTINGS = {
   low: { time: 60, multiplier: 1 },
@@ -11,117 +11,116 @@ const DIFFICULTY_SETTINGS = {
 };
 
 const GameBoard = ({ difficulty, onGameOver }) => {
+  const {
+    score,
+    setScore,
+    lives,
+    setLives,
+    setIsGameOver,
+    saveScore
+  } = useGame();
+
   const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [lives, setLives] = useState(3);
   const [timeLeft, setTimeLeft] = useState(DIFFICULTY_SETTINGS[difficulty].time);
   const [answer, setAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const { score, setScore } = useGameStore();
+  const [isSaving, setIsSaving] = useState(false);
   const timerRef = useRef();
   const mounted = useRef(true);
 
   const fetchNewQuestion = useCallback(async () => {
     if (!mounted.current) return;
-
     try {
       setIsLoading(true);
       const response = await fetch('https://marcconrad.com/uob/banana/api.php');
       const data = await response.json();
-      if (mounted.current) {
-        setCurrentQuestion(data);
-        setError('');
-      }
+      mounted.current && setCurrentQuestion(data);
     } catch (err) {
-      if (mounted.current) {
-        setError('Failed to fetch question. Please try again.');
-      }
+      mounted.current && setError('Failed to fetch question. Please try again.');
     } finally {
-      if (mounted.current) {
-        setIsLoading(false);
-      }
+      mounted.current && setIsLoading(false);
     }
   }, []);
 
-  // Handle component mount/unmount
   useEffect(() => {
     mounted.current = true;
-
-    // Initial question fetch
     fetchNewQuestion();
-
     return () => {
       mounted.current = false;
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      clearInterval(timerRef.current);
     };
   }, [fetchNewQuestion]);
 
-  // Handle timer
+  const handleGameEnd = useCallback(async (finalScore, won) => {
+    if (isSaving || !mounted.current) return;
+
+    try {
+      setIsSaving(true);
+      clearInterval(timerRef.current);
+      setIsGameOver(true);
+
+      await saveScore(finalScore, won);
+      onGameOver(finalScore);
+    } catch (err) {
+      console.error("Error ending game:", err);
+      setError(`Failed to save score: ${err.message}`);
+      onGameOver(finalScore);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveScore, onGameOver, setIsGameOver, isSaving]);
+
   useEffect(() => {
     if (!mounted.current) return;
 
     timerRef.current = setInterval(() => {
-      if (mounted.current) {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-            }
-            // Call onGameOver after the render
-            setTimeout(() => {
-              onGameOver(score);
-            }, 0);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          // Don't call handleGameEnd here, just prepare for it
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [difficulty, onGameOver, score]);
+    return () => clearInterval(timerRef.current);
+  }, [difficulty]);
+
+  // Effect to handle time-out game over
+  useEffect(() => {
+    if (timeLeft === 0 && mounted.current) {
+      handleGameEnd(score, score > 50);
+    }
+  }, [timeLeft, score, handleGameEnd]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!currentQuestion || !mounted.current) return;
+    if (!currentQuestion || !mounted.current || isSaving) return;
 
     const isCorrect = Number(answer) === currentQuestion.solution;
 
     if (isCorrect) {
       const points = Math.floor(100 * DIFFICULTY_SETTINGS[difficulty].multiplier);
-      setScore(score + points);
+      setScore(prev => prev + points);
       setAnswer('');
       await fetchNewQuestion();
     } else {
-      setLives((prev) => {
+      setLives(prev => {
         const newLives = prev - 1;
         if (newLives === 0) {
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-          }
-          // Defer the onGameOver call until after the render cycle
-          setTimeout(() => {
-            onGameOver(score);
-          }, 0);
+          // Queue the game end but don't call immediately to avoid race conditions
+          setTimeout(() => handleGameEnd(score, false), 0);
         }
         return newLives;
       });
-
       setAnswer('');
     }
   };
 
   const handleRetry = useCallback(() => {
-    if (mounted.current) {
-      fetchNewQuestion();
-    }
+    mounted.current && fetchNewQuestion();
   }, [fetchNewQuestion]);
 
   return (
@@ -213,6 +212,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
               onChange={(e) => setAnswer(e.target.value)}
               className="w-24 h-24 text-4xl text-center bg-white/5 border-2 border-yellow-400/50 rounded-lg focus:border-yellow-400 focus:outline-none text-white"
               placeholder="?"
+              disabled={isSaving}
             />
           </div>
           <Button
@@ -220,7 +220,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
             variant="fantasy"
             size="lg"
             className="w-full max-w-xs"
-            disabled={!answer || isLoading}
+            disabled={!answer || isLoading || isSaving}
           >
             Submit Answer
           </Button>

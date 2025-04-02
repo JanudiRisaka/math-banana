@@ -1,29 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useGameStore } from '../stores/useGameStore';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Layout/Button';
-import { Loader2 } from 'lucide-react'; // Import loader icon
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { resetGame } = useGameStore();
-  const { isAuthenticated, isLoading, checkAuthStatus } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
-  const handleStartGame = async () => {
-    try {
-      // Always perform a fresh auth check
-      const { isAuthenticated: currentAuthStatus } = await checkAuthStatus();
-
-      if (currentAuthStatus) {
-        resetGame();
-        navigate('/game');
-      } else {
-        navigate('/signin');
-      }
-    } catch (error) {
-      console.error('Navigation error:', error);
+  const handleStartGame = () => {
+    // Don't perform a fresh auth check, trust the current auth state
+    if (isAuthenticated && user) {
+      navigate('/game');
+    } else {
       navigate('/signin');
     }
   };

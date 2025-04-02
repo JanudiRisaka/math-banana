@@ -1,44 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Crown, Medal, User, Clock } from 'lucide-react';
-import api from '../utils/api';
+import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 
 const Leaderboard = () => {
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { leaderboard, fetchLeaderboard, isLeaderboardLoading, error, clearError } = useGame();
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const names = name.split(' ');
+    return names
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   useEffect(() => {
     fetchLeaderboard();
-  }, []);
+  }, [fetchLeaderboard]);
 
-// Leaderboard.jsx
-const fetchLeaderboard = async () => {
-  try {
-    const response = await api.get('http://localhost:5000/game/leaderboard');
-
-    if (response.data && Array.isArray(response.data.leaderboard)) {
-      const sortedData = response.data.leaderboard.sort((a, b) => b.highScore - a.highScore);
-
-      const data = sortedData.map(entry => ({
-        ...entry,
-        last_active: new Date(entry.updatedAt).toLocaleDateString()
-      }));
-
-      setLeaderboard(data);
-    } else {
-      throw new Error('Invalid leaderboard format');
-    }
-  } catch (error) {
-    console.error('API Error:', error.response?.data || error.message);
-    // Optionally show error to user:
-    // setError(error.response?.data?.message || 'Failed to load leaderboard');
-  } finally {
-    setLoading(false);
-  }
-};
-
+  // Add safe value handling
+  const getSafeHighScore = (entry) => {
+    // Check both possible locations for the score
+    return entry.highScore ?? entry.score ?? 0;
+  };
 
   const getRankIcon = (rank) => {
     switch (rank) {
@@ -49,10 +37,24 @@ const fetchLeaderboard = async () => {
     }
   };
 
-  if (loading) {
+  if (isLeaderboardLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6 flex justify-center">
         <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6 text-red-400 text-center">
+        {error}
+        <button
+          onClick={clearError}
+          className="mt-2 text-yellow-400 hover:text-yellow-300"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -70,60 +72,60 @@ const fetchLeaderboard = async () => {
         </div>
 
         <div className="space-y-4">
-          {leaderboard.map((entry, index) => {
-            console.log(entry); // Move this log inside the .map() function to inspect entry
-            return (
-              <motion.div
-                key={entry._id} // MongoDB uses _id instead of id
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`flex items-center bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors ${
-                  entry._id === user?._id ? 'border-2 border-yellow-400' : ''
-                }`}
-              >
-                <div className="w-12 text-center">
-                  {getRankIcon(index) || (
-                    <span className="text-white/80 text-lg">{index + 1}</span>
-                  )}
-                </div>
-                <div className="flex items-center flex-1 px-4">
-                  {entry.avatarUrl ? (
-                    <img
-                      src={entry.avatarUrl}
-                      alt={entry.username}
-                      className="w-10 h-10 rounded-full mr-3 border border-white/20"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                      <User className="w-5 h-5 text-gray-300" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="text-gray-300 font-semibold"> {entry.user?.username || 'Anonymous'}</h3>
-                    <div className="flex items-center text-gray-300 text-sm">
-                      <Clock className="w-3 h-3 mr-1" />
-                      <span>Last active: {entry.last_active}</span>
-                    </div>
+          {leaderboard.map((entry, index) => (
+            <motion.div
+              key={entry._id || index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className={`flex items-center bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors ${
+                entry.user?._id === user?._id ? 'border-2 border-yellow-400' : ''
+              }`}
+            >
+              <div className="w-12 text-center">
+                {getRankIcon(index) || (
+                  <span className="text-white/80 text-lg">{index + 1}</span>
+                )}
+              </div>
+              <div className="flex items-center flex-1 px-4">
+                {entry.user?.avatar ? (
+                  <img
+                    src={entry.user.avatar}
+                    alt={entry.user.username}
+                    className="w-10 h-10 rounded-full mr-3 border border-white/20"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                    <span className="text-gray-300 text-sm font-medium">
+                      {getInitials(entry.user?.username)}
+                    </span>
+                  </div>
+                )}
+<div>
+                  <h3 className="text-gray-300 font-semibold">
+                    {entry.user?.username || 'Anonymous'}
+                  </h3>
+                  <div className="flex items-center text-gray-300 text-sm">
+                    <Clock className="w-3 h-3 mr-1" />
+                    <span>Last active: {entry.last_active || 'N/A'}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-yellow-400 font-bold text-xl">
-                    {entry.highScore.toLocaleString()}
-                  </div>
-                  <div className="text-gray-400 text-sm">
-                    Level {Math.floor(entry.highScore / 1000)}
-                  </div>
+              </div>
+              <div className="text-right">
+                <div className="text-yellow-400 font-bold text-xl">
+                  {/* Add safe value handling */}
+                  {getSafeHighScore(entry).toLocaleString()}
                 </div>
-              </motion.div>
-            );
-          })}
+                <div className="text-gray-400 text-sm">
+                  Level {Math.floor(getSafeHighScore(entry) / 1000)}
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </motion.div>
     </div>
   );
-
-
 };
 
 export default Leaderboard;

@@ -3,19 +3,18 @@ import { motion } from 'framer-motion';
 import { Trophy, RotateCcw, Home } from 'lucide-react';
 import { Button } from '../Layout/Button';
 import { useNavigate } from 'react-router-dom';
-import { useGameStore } from '../../stores/useGameStore';
 
-const GameOver = ({ score, onRestart, onBackToMenu }) => {
+const GameOver = ({ score, onRestart, onBackToMenu, error }) => {
   const navigate = useNavigate();
-  const { resetGame } = useGameStore();
 
   const handleBackToMenu = () => {
-    resetGame();
+    // Perform any additional cleanup if necessary
     navigate('/');
   };
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
+      {error && <div className="text-red-500">{error}</div>}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

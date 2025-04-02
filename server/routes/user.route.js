@@ -1,20 +1,18 @@
-// routes/user.routes.js
 import express from 'express';
 import {
+  getUserData,
   getUserDetails,
   updateUserDetails,
-  deleteUser,
-  getUserData
+  deleteUser
 } from '../controllers/user.controller.js';
 import userAuth from '../middleware/userAuth.js';
 
 const userRouter = express.Router();
 
+// Add data endpoint
 userRouter.get('/data', userAuth, getUserData);
-
-
-userRouter.put('/profile', updateUserDetails);
-userRouter.get('/profile', getUserDetails);
-userRouter.delete('/profile', deleteUser);
+userRouter.get('/profile/:userId?', userAuth, getUserDetails);
+userRouter.put('/profile', userAuth, updateUserDetails);
+userRouter.delete('/profile', userAuth, deleteUser);
 
 export default userRouter;

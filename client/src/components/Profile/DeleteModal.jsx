@@ -1,11 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '../Layout/Button';
 import { motion } from 'framer-motion';
-import { Sparkles, AlertTriangle } from 'lucide-react';
+import { Sparkles, AlertTriangle, Loader } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const DeleteModal = ({ showModal, onCancel, onDelete }) => (
-  showModal && (
-    <div className="fixed inset-0 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=2342&q=80')] bg-cover bg-center">
+const DeleteModal = ({ showModal, onCancel, onDelete }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete();
+      // The redirect will be handled by the parent component
+    } catch (error) {
+      console.error('Error during account deletion:', error);
+      toast.error('Failed to delete account. Please try again.');
+      setIsDeleting(false);
+    }
+  };
+
+  return showModal ? (
+    <div className="fixed inset-0 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=2342&q=80')] bg-cover bg-center z-50">
       <div className="absolute inset-0 bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm" />
 
       <motion.div
@@ -24,9 +39,12 @@ const DeleteModal = ({ showModal, onCancel, onDelete }) => (
           <div className="text-center mb-8">
             <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-white mb-2">Confirm Deletion</h2>
-            <p className="text-gray-300">
+            <p className="text-gray-300 mb-4">
               Are you sure you want to delete your account?<br />
               This action cannot be undone and all data will be permanently lost.
+            </p>
+            <p className="text-yellow-400 font-medium">
+              This will also delete all your game progress and statistics.
             </p>
           </div>
 
@@ -35,21 +53,30 @@ const DeleteModal = ({ showModal, onCancel, onDelete }) => (
               variant="ghost"
               className="text-white hover:text-yellow-400"
               onClick={onCancel}
+              disabled={isDeleting}
             >
               Cancel
             </Button>
             <Button
               variant="fantasy"
               className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={onDelete}
+              onClick={handleDelete}
+              disabled={isDeleting}
             >
-              Delete Account
+              {isDeleting ? (
+                <div className="flex items-center space-x-2">
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>Deleting...</span>
+                </div>
+              ) : (
+                'Delete Account'
+              )}
             </Button>
           </div>
         </div>
       </motion.div>
     </div>
-  )
-);
+  ) : null;
+};
 
 export default DeleteModal;

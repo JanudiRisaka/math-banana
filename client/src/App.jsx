@@ -10,6 +10,7 @@ import UserProfile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Header from './components/Layout/Header';
+import Footer from './components/Layout/Footer';
 import Home from './pages/Home';
 import EmailVerify from './pages/EmailVerify';
 import ResetPassword from './pages/ResetPassword';
@@ -24,19 +25,24 @@ export default function App() {
 
 
   return (
-<div
-  className="min-h-screen bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm"
-  style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
->
-
+    <div
+      className="min-h-screen flex flex-col" // Added flex layout
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        background: 'linear-gradient(to bottom, #001B3D/90, #000B1A/90)'
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="container mx-auto px-4 py-8"
+        className="flex-1 flex flex-col px-4 pt-8" // Changed to flex-col and flex-1
       >
         {!noHeaderPaths.includes(location.pathname) && <Header />}
 
-        <main className="container mx-auto px-4 py-8">
+        <main className="flex-grow">
+        <div className="container mx-auto px-4 py-8">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/signin" element={<SignIn />} />
@@ -49,6 +55,7 @@ export default function App() {
     </ProtectedRoute>
   }
 />
+Add User Data Loading State:
             <Route path="/help" element={<Help />} />
             <Route path="/verify-email" element={<EmailVerify />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -67,7 +74,11 @@ export default function App() {
             <Route path="/verify-email-pending" element={<Navigate to="/verify-email" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
+          </div>
         </main>
+        <div className="mt-auto">
+          <Footer />
+        </div>
       </motion.div>
     </div>
   );

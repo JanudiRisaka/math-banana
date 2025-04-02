@@ -1,114 +1,119 @@
-//client/src/pages/Profile.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { useUser } from '../context/UserContext';
 import ProfileHeader from '../components/Profile/ProfileHeader';
 import ProfileStats from '../components/Profile/ProfileStats';
 import RecentActivity from '../components/Profile/RecentActivity';
 import Actions from '../components/Profile/Actions';
 import UpdateModal from '../components/Profile/UpdateModal';
 import DeleteModal from '../components/Profile/DeleteModal';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
-  const { user, logout, updateUser } = useAuth();
-  const [profile, setProfile] = useState(null);
+  const { user: authUser, updateUser, isLoading: authLoading, error: authError } = useAuth();
+  const {
+    userProfile,
+    userStats,
+    loading: userLoading,
+    error: userError,
+    fetchUserProfile,
+    updateProfile,
+    deleteAccount,
+    logout
+  } = useUser();
+
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      const fetchProfile = async () => {
-        try {
-          const response = await api.get(`http://localhost:5000/user/profile/${user.id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          });
-          setProfile(response.data);
-        } catch (error) {
-          console.error('Error fetching profile:', error.message);
-        }
-      };
+    // Fetch user profile on component mount
+    fetchUserProfile().catch(err => {
+      console.error('Error fetching profile:', err);
+      toast.error('Failed to load profile');
+    });
+  }, []);
 
-      fetchProfile();
+  // Navigation handling
+  useEffect(() => {
+    if (!authLoading && !authUser) {
+      navigate('/signin');
     }
-  }, [user]);
+  }, [authUser, authLoading, navigate]);
 
-  if (!user) {
-    navigate('/signup');
-    return null;
+  // Profile data fetching using UserContext
+  useEffect(() => {
+    if (authUser && !userProfile) {
+      fetchUserProfile().catch(err => {
+        console.error('Error fetching profile:', err);
+        if (err.message?.includes('Not Authorized')) {
+          navigate('/signin');
+        }
+      });
+    }
+  }, [authUser, userProfile, fetchUserProfile, navigate]);
+
+  // Handle loading state
+  if (authLoading || userLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6 flex justify-center">
+        <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  if (!profile) {
-    return <div>Loading...</div>;
+  // Handle error state
+  if (authError || userError) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-6 text-red-400 text-center">
+        {authError || userError}
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-2 text-yellow-400 hover:text-yellow-300"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  // Handle not logged in
+  if (!authUser) {
+    return <div>Please log in to view your profile</div>;
   }
 
   const handleUpdateProfile = async (updateData) => {
     try {
-      // Add debug logging
-      console.log('Update data:', updateData);
-      console.log('User ID:', user?.id);
-
-      const response = await api.put(
-        `http://localhost:5000/user/profile/${user.id}`,
-        {
-          username: updateData.username,
-          avatar: updateData.avatar,
-          ...(updateData.password && { password: updateData.password })
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-
-      // Update both local state and auth context
-      setProfile(prev => ({
-        ...prev,
-        user: response.data.user,
-        stats: prev.stats // Maintain existing stats
-      }));
-
-      updateUser(response.data.user);
-
-      // Show success alert and redirect
-      alert('Profile updated successfully!');
-      navigate('/profile'); // Redirect to refresh data
-
-    } catch (error) {
-      console.error('Update error:', error.response?.data || error.message);
-      navigate('/profile');
-    } finally {
-      // Close modal in both cases
+      const updatedUser = await updateProfile(updateData);
+      updateUser(updatedUser);
       setShowUpdateModal(false);
+    } catch (err) {
+      console.error('Update error:', err);
     }
   };
 
   const handleDeleteAccount = async () => {
     try {
-      await api.delete(`/user/profile/${user.id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      logout();
-      navigate('/signup');
-      alert('Account deleted successfully');
-    } catch (error) {
-      console.error('Error deleting account:', error.message);
+      await deleteAccount();
+      toast.success('Account deleted successfully');
+      navigate('/');  // Redirect to home page after successful deletion
+    } catch (err) {
+      toast.error('Failed to delete account: ' + err.message);
     }
   };
 
   return (
     <div className="min-h-auto flex flex-col items-center justify-center bg-cover bg-center">
-      {/* Main Profile Content */}
       <div className="inset-0 from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm">
         <div className="relative z-10 w-full max-w-2xl">
           <div className="p-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 shadow-xl">
-            <ProfileHeader user={user} />
-            <ProfileStats stats={profile.stats} />
-            <RecentActivity stats={profile.stats} />
+            <ProfileHeader user={userProfile || authUser}  />
+
+            {/* Pass stats directly from userContext */}
+            <ProfileStats stats={userStats} />
+            <RecentActivity stats={userStats} />
+
             <Actions
               onUpdateClick={() => setShowUpdateModal(true)}
               onDeleteClick={() => setShowDeleteModal(true)}
@@ -117,21 +122,15 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Update Modal */}
       {showUpdateModal && (
         <UpdateModal
           showModal={showUpdateModal}
           onCancel={() => setShowUpdateModal(false)}
           onUpdate={handleUpdateProfile}
-          newUsername={newUsername}
-          setNewUsername={setNewUsername}
-          newPassword={newPassword}
-          setNewPassword={setNewPassword}
-          currentAvatar={user?.avatar}
+          currentAvatar={userProfile?.avatar || user?.avatar}
         />
       )}
 
-      {/* Delete Modal */}
       {showDeleteModal && (
         <DeleteModal
           showModal={showDeleteModal}

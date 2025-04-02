@@ -1,12 +1,22 @@
 import express from 'express';
-import { verifyToken } from '../middleware/verifyToken.js';
-import { createScore, getLeaderboard, getUserStats } from '../controllers/game.controller.js';
+import { createGameData, getLeaderboard } from '../controllers/game.controller.js';
+import userAuth from '../middleware/userAuth.js';
+import rateLimit from 'express-rate-limit';
 
-const router = express.Router();
+const gameRoutes = express.Router();
 
-// Define the routes for scores and leaderboard with authentication middleware
-router.post('/scores', verifyToken, createScore);
-router.get('/leaderboard', getLeaderboard); // GET request to fetch leaderboard
-router.get('/stats', verifyToken, getUserStats);
+const scoreLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({
+    success: false,
+    message: 'Too many score submissions'
+  })
+});
 
-export default router;
+gameRoutes.post('/scores', userAuth, scoreLimiter, createGameData);
+gameRoutes.get('/leaderboard', getLeaderboard);
+
+export default gameRoutes;

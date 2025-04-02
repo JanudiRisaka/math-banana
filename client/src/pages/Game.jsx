@@ -1,114 +1,55 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { jwtDecode } from 'jwt-decode';
 import DifficultySelect from '../components/Game/DifficultySelect';
 import GameBoard from '../components/Game/GameBoard';
 import GameOver from '../components/Game/GameOver';
-import { useGameStore } from '../stores/useGameStore';
+import { useGame } from '../context/GameContext';
 
 const Game = () => {
   const [gameState, setGameState] = useState('difficulty');
   const [difficulty, setDifficulty] = useState('low');
-  const { score, setScore } = useGameStore();
+  const [finalScore, setFinalScore] = useState(0);
+  const { resetGame } = useGame();
+
+  // Clean up on component mount
+  useEffect(() => {
+    resetGame();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDifficultySelect = useCallback((selectedDifficulty) => {
     setDifficulty(selectedDifficulty);
     setGameState('playing');
-    setScore(0);
-  }, [setScore]);
+    resetGame();
+  }, [resetGame]);
 
-
-  const saveScoreToDatabase = async (score, won) => {
-    try {
-      const response = await fetch('http://localhost:5000/game/scores', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          score: Number(score),
-          won
-        }),
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.message || 'Score save failed');
-      }
-
-      return responseData;
-    } catch (err) {
-      console.error('Score save error:', err.message);
-      throw new Error(`Could not save score: ${err.message}`);
-    }
-  };
-
-  const handleGameOver = useCallback(async () => {
-    try {
-      await saveScoreToDatabase(score, score > 50);
-      setGameState('gameOver');
-    } catch (err) {
-      console.error('Game over error:', err.message);
-      // Optionally show error to user
-      alert(err.message);
-    }
-  }, [score]);
-
+  const handleGameOver = useCallback((score) => {
+    setFinalScore(score);
+    setGameState('gameOver');
+  }, []);
 
   const handleRestart = useCallback(() => {
     setGameState('difficulty');
-    setScore(0);
-  }, [setScore]);
-
-  const handleBackToMenu = useCallback(() => {
-    setGameState('difficulty');
-    setScore(0);
-  }, [setScore]);
+    resetGame();
+  }, [resetGame]);
 
   return (
     <AnimatePresence mode="wait">
       {gameState === 'difficulty' && (
-        <motion.div
-          key="difficulty"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="col-span-full"
-        >
+        <motion.div key="difficulty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <DifficultySelect onSelect={handleDifficultySelect} />
         </motion.div>
       )}
 
       {gameState === 'playing' && (
-        <motion.div
-          key="game"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="col-span-full"
-        >
-          <GameBoard
-            difficulty={difficulty}
-            onGameOver={handleGameOver}
-          />
+        <motion.div key="game" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <GameBoard difficulty={difficulty} onGameOver={handleGameOver} />
         </motion.div>
       )}
 
       {gameState === 'gameOver' && (
-        <motion.div
-          key="gameOver"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="col-span-full"
-        >
-          <GameOver
-            score={score}
-            onRestart={handleRestart}
-            onBackToMenu={handleBackToMenu}
-          />
+        <motion.div key="gameOver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <GameOver score={finalScore} onRestart={handleRestart} />
         </motion.div>
       )}
     </AnimatePresence>

@@ -3,12 +3,12 @@ import mongoose from 'mongoose';
 const gameSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'user',
     required: true,
   },
   score: {
     type: Number,
-    default: 0,
+    required: true,
     min: 0
   },
   gamesPlayed: {
@@ -34,10 +34,14 @@ const gameSchema = new mongoose.Schema({
   lastPlayed: {
     type: Date,
     default: null
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 }, { timestamps: true });
 
 // Indexes for faster queries
-gameSchema.index({ highScore: -1 });
+gameSchema.index({ user: 1, score: -1 });
 
 export default mongoose.model('Game', gameSchema);
