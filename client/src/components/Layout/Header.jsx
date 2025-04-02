@@ -5,18 +5,18 @@ import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-r
 import { Button } from './Button';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAudio } from '../../hooks/useAudio.js';
-import backgroundMusic from '../../assets/Genshin Impact Main Theme.mp3';
+const backgroundMusicPath = new URL('../../assets/Genshin Impact Main Theme.mp3', import.meta.url).href;
 
 function Header() {
   const { user, logout } = useAuth();
   const isAuthenticated = !!user;
   const navigate = useNavigate();
 
+
   // Local state for managing audio mute status
   const [isMuted, setIsMuted] = useState(false);
+  const [audioMuted, audioToggleMute] = useAudio(backgroundMusicPath, isMuted);
   const [avatarError, setAvatarError] = useState(false);
-  const [audioMuted, audioToggleMute] = useAudio(backgroundMusic, isMuted);
-
   // Reset avatar error state when user changes and force component update
   useEffect(() => {
     setAvatarError(false);

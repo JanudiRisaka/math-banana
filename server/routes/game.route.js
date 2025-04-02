@@ -1,5 +1,5 @@
 import express from 'express';
-import { createGameData, getLeaderboard } from '../controllers/game.controller.js';
+import { createGameData, getUserStats, getLeaderboard } from '../controllers/game.controller.js';
 import userAuth from '../middleware/userAuth.js';
 import rateLimit from 'express-rate-limit';
 
@@ -16,7 +16,8 @@ const scoreLimiter = rateLimit({
   })
 });
 
+gameRoutes.get('/stats', userAuth, getUserStats);
 gameRoutes.post('/scores', userAuth, scoreLimiter, createGameData);
-gameRoutes.get('/leaderboard', getLeaderboard);
+gameRoutes.get('/leaderboard', userAuth, getLeaderboard);
 
 export default gameRoutes;

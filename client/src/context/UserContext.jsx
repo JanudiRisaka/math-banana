@@ -9,153 +9,101 @@ export function UserProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Create API instance with appropriate headers
+  // Axios instance with default configuration
   const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true, // Enable cookies
+    withCredentials: true,
     headers: {
       'Content-Type': 'application/json',
-    },
-  });
-
-  // Add auth token to requests if available
-  api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
     }
-    return config;
   });
 
-  const fetchUserProfile = async () => {
+  // Response interceptor for consistent error handling
+  api.interceptors.response.use(
+    response => response,
+    error => {
+      const message = error.response?.data?.message || error.message;
+      setError(message);
+      return Promise.reject(message);
+    }
+  );
+
+  const fetchUserProfile = async (forceRefresh = false) => {
+    if (!forceRefresh && userProfile) return { user: userProfile, stats: userStats };
+
     setLoading(true);
     try {
-      const response = await api.get('/api/user/profile');
-      setUserProfile(response.data.user);
-      setUserStats(response.data.stats);
+      const { data } = await api.get('/api/user/profile');
+      setUserProfile(data.user);
+      setUserStats(data.stats);
       setError(null);
-      return {
-        user: response.data.user,
-        stats: response.data.stats
-      };
+      return data;
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Failed to fetch profile';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      throw new Error(err.message || 'Failed to fetch profile');
     } finally {
       setLoading(false);
     }
   };
 
-  // Validate avatar URL before sending to backend
   const validateAvatarUrl = (url) => {
-    // Check if it's a valid URL format
     try {
-      new URL(url);
-      // Check if it's a DiceBear URL or other allowed format
-      return (
-        url.includes('api.dicebear.com') ||
-        url.startsWith('data:image/svg+xml') ||
-        url.startsWith('https://') ||
-        url.startsWith('http://')
-      );
-    } catch (err) {
+      const validProtocols = ['http:', 'https:', 'data:'];
+      const parsedUrl = new URL(url);
+      return validProtocols.includes(parsedUrl.protocol);
+    } catch {
       return false;
     }
   };
 
-  // Update avatar specifically
-  const updateAvatar = async (avatarUrl) => {
+  const updateProfileData = async (updateData) => {
     setLoading(true);
     try {
-      // Validate URL format first
-      if (!validateAvatarUrl(avatarUrl)) {
+      if (updateData.avatar && !validateAvatarUrl(updateData.avatar)) {
         throw new Error('Invalid avatar URL format');
       }
 
-      const response = await api.put('/api/user/profile/avatar', { avatar: avatarUrl });
-      setUserProfile(prev => ({ ...prev, avatar: response.data.user.avatar }));
-      setError(null);
-      return response.data.user;
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Avatar update failed';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const { data } = await api.put('/api/user/profile', updateData);
+      setUserProfile(prev => ({ ...prev, ...data.user }));
+      if (data.stats) setUserStats(data.stats);
+      return data.user;
     } finally {
       setLoading(false);
     }
   };
 
-  // General profile update
-  const updateProfile = async (updateData) => {
-    setLoading(true);
-    try {
-      // Special handling for avatar updates
-      if (updateData.avatar) {
-        if (!validateAvatarUrl(updateData.avatar)) {
-          throw new Error('Invalid avatar URL format');
-        }
-      }
-
-      const response = await api.put('/api/user/profile', updateData);
-      setUserProfile(prev => ({ ...prev, ...response.data.user }));
-
-      // Also update stats if they're returned in the response
-      if (response.data.stats) {
-        setUserStats(response.data.stats);
-      }
-
-      setError(null);
-      return response.data.user;
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Update failed';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+  const updateAvatar = async (avatarUrl) => {
+    return updateProfileData({ avatar: avatarUrl });
   };
 
   const logout = async () => {
     try {
       await api.post('/api/auth/logout');
-      setUserProfile(null);
-      setUserStats(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      setError(null);
+      clearUserData();
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Logout failed';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      throw new Error(err.message || 'Logout failed');
     }
   };
 
   const deleteAccount = async () => {
     setLoading(true);
     try {
-      const response = await api.delete('/api/user/profile');
-
-      // Clear all user data from state and local storage
-      setUserProfile(null);
-      setUserStats(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-
-      // Clear any game-related data from local storage if present
-      localStorage.removeItem('gameState');
-      localStorage.removeItem('gameProgress');
-      localStorage.removeItem('lastGameSession');
-
-      setError(null);
-      return response.data;
+      await api.delete('/api/user/profile');
+      clearUserData();
+      return true;
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Account deletion failed';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      throw new Error(err.message || 'Account deletion failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearUserData = () => {
+    setUserProfile(null);
+    setUserStats(null);
+    ['user', 'token', 'gameState', 'gameProgress', 'lastGameSession'].forEach(
+      key => localStorage.removeItem(key)
+    );
   };
 
   const value = {
@@ -164,7 +112,7 @@ export function UserProvider({ children }) {
     loading,
     error,
     fetchUserProfile,
-    updateProfile,
+    updateProfile: updateProfileData,
     updateAvatar,
     deleteAccount,
     logout

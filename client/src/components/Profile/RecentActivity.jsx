@@ -1,31 +1,26 @@
+// RecentActivity.jsx
 import React from 'react';
 import { Clock, Award } from 'lucide-react';
 
+const activityDefaults = {
+  lastGameScore: 0,
+  lastPlayed: null,
+  dailyStreak: 0
+};
+
 const RecentActivity = ({ stats }) => {
-  console.log("RecentActivity received stats:", stats); // Debug log
+  const safeStats = { ...activityDefaults, ...(stats || {}) };
 
-  // Safely handle null/undefined stats
-  const safeStats = {
-    lastGameScore: 0,
-    lastPlayed: null,
-    dailyStreak: 0,
-    ...(stats || {}) // Only spread if stats exists
-  };
-
-  console.log("RecentActivity using stats:", safeStats); // Debug what's used
-
-  const formatDate = (dateString) => {
+  const formatDateTime = (dateString) => {
     if (!dateString) return 'Never played';
     try {
-      const options = {
+      return new Date(dateString).toLocaleString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        day: 'numeric',
-        month: 'short'
-      };
-      return new Date(dateString).toLocaleString(undefined, options);
-    } catch (error) {
-      console.error("Date formatting error:", error);
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
       return 'Invalid date';
     }
   };
@@ -38,38 +33,36 @@ const RecentActivity = ({ stats }) => {
       </h2>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
-          <div className="flex items-center gap-3">
-            <Award className="w-6 h-6 text-green-400" />
-            <span className="text-gray-300">Last Game Score</span>
-          </div>
-          <span className="text-white font-bold text-lg">
-            {safeStats.lastGameScore ? safeStats.lastGameScore.toLocaleString() : 'N/A'}
-          </span>
-        </div>
+        <ActivityItem
+          icon={<Award className="w-6 h-6 text-green-400" />}
+          label="Last Game Score"
+          value={safeStats.lastGameScore.toLocaleString()}
+        />
 
-        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
-          <div className="flex items-center gap-3">
-            <Clock className="w-6 h-6 text-blue-400" />
-            <span className="text-gray-300">Last Played</span>
-          </div>
-          <span className="text-white font-bold text-lg">
-            {formatDate(safeStats.lastPlayed)}
-          </span>
-        </div>
+        <ActivityItem
+          icon={<Clock className="w-6 h-6 text-blue-400" />}
+          label="Last Played"
+          value={formatDateTime(safeStats.lastPlayed)}
+        />
 
-        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 text-center text-orange-400 font-bold">🔥</div>
-            <span className="text-gray-300">Daily Streak</span>
-          </div>
-          <span className="text-white font-bold text-lg">
-            {safeStats.dailyStreak} days
-          </span>
-        </div>
+        <ActivityItem
+          icon={<div className="w-6 h-6 text-center text-orange-400 font-bold">🔥</div>}
+          label="Daily Streak"
+          value={`${safeStats.dailyStreak} days`}
+        />
       </div>
     </div>
   );
 };
+
+const ActivityItem = ({ icon, label, value }) => (
+  <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg shadow-xl">
+    <div className="flex items-center gap-3">
+      {icon}
+      <span className="text-gray-300">{label}</span>
+    </div>
+    <span className="text-white font-bold text-lg">{value}</span>
+  </div>
+);
 
 export default RecentActivity;

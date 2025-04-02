@@ -9,7 +9,6 @@ dotenv.config();
 const generateAvatar = (username) =>
   `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(username)}`;
 
-// Fixed getUserDetails controller function
 export const getUserDetails = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId;
@@ -37,15 +36,13 @@ export const getUserDetails = async (req, res) => {
       gamesPlayed: 0,
       avgScore: 0,
       lastPlayed: null,
-      lastGameScore: 0,
-      dailyStreak: 0 // Added missing dailyStreak
+      lastGameScore: 0
     };
 
     if (!req.params.userId) {
       // Get aggregated game stats
       const stats = await Game.aggregate([
         { $match: { user: new mongoose.Types.ObjectId(userId) } },
-        { $sort: { createdAt: -1 } }, // Sort by most recent first
         {
           $group: {
             _id: null,
@@ -53,14 +50,10 @@ export const getUserDetails = async (req, res) => {
             totalGames: { $sum: 1 },
             totalScore: { $sum: "$score" },
             lastPlayed: { $max: "$createdAt" },
-            dailyStreak: { $max: "$dailyStreak" }, // Include dailyStreak
-            // Get the last game score using the first document (after sort)
-            lastGameScore: { $first: "$score" }
+            lastGameScore: { $last: "$score" }
           }
         }
       ]);
-
-      console.log('Aggregated game stats:', stats); // Debug log
 
       if (stats.length > 0) {
         gameStats = {
@@ -70,8 +63,7 @@ export const getUserDetails = async (req, res) => {
             ? Math.round(stats[0].totalScore / stats[0].totalGames)
             : 0,
           lastPlayed: stats[0].lastPlayed,
-          lastGameScore: stats[0].lastGameScore || 0,
-          dailyStreak: stats[0].dailyStreak || 0 // Include dailyStreak
+          lastGameScore: stats[0].lastGameScore || 0
         };
       }
     }
@@ -96,7 +88,6 @@ export const getUserDetails = async (req, res) => {
           stats: gameStats
         };
 
-    console.log('Sending response:', response); // Debug log
     res.status(200).json(response);
 
   } catch (error) {
@@ -108,7 +99,6 @@ export const getUserDetails = async (req, res) => {
     });
   }
 };
-
 
 export const getUserData = async (req, res) => {
   try {
@@ -219,39 +209,19 @@ export const updateUserDetails = async (req, res) => {
   }
 };
 
-// Delete user and associated game data
+// Delete user
 export const deleteUser = async (req, res) => {
-  // Start a MongoDB session for transaction support
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId; // Fixed from req.userId
+    const deletedUser = await User.findByIdAndDelete(userId);
 
-    // First, find the user to ensure they exist
-    const user = await User.findById(userId);
-
-    if (!user) {
-      await session.abortTransaction();
-      session.endSession();
+    if (!deletedUser) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    // Delete all game data associated with this user
-    const deletedGames = await Game.deleteMany({ userId: userId }, { session });
-    console.log(`Deleted ${deletedGames.deletedCount} game records for user ${userId}`);
-
-    // Delete the user account
-    const deletedUser = await User.findByIdAndDelete(userId, { session });
-
-    // Commit the transaction
-    await session.commitTransaction();
-    session.endSession();
-
-    // Clear the authentication cookie
     res.clearCookie("jwt", {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -260,14 +230,10 @@ export const deleteUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Account and all associated data deleted successfully'
+      message: 'Account deleted successfully'
     });
   } catch (error) {
-    // If an error occurs, abort the transaction
-    await session.abortTransaction();
-    session.endSession();
-
-    console.error('Account deletion error:', error);
+    console.error('Deletion error:', error);
     res.status(500).json({
       success: false,
       message: 'Account deletion failed'

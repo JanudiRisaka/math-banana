@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 import { Sparkles, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';
-import { useAuth } from '../context/AuthContext';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import axios from 'axios'; // Make sure to install axios if you haven't already
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,9 +16,8 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Local loading state
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signin } = useAuth();
 
   const handleLogoClick = () => {
     navigate('/');
@@ -33,17 +32,28 @@ export default function SignIn() {
       // Validate with Zod
       signInSchema.parse({ email, password });
 
-      const response = await signin(email, password); // Pass raw values
+      // Connect to your backend API
+      const response = await axios.post('/api/auth/signin', {
+        email,
+        password
+      });
 
-      if (response?.success) {
+      if (response.data?.success) {
         toast.success('Signed in successfully!');
         navigate('/dashboard');
+      } else {
+        // Handle unsuccessful login
+        setError(response.data?.message || 'Sign in failed');
+        toast.error(response.data?.message || 'Sign in failed');
       }
 
     } catch (err) {
       let errorMessage = err.message;
       if (err instanceof z.ZodError) {
         errorMessage = err.errors[0].message;
+      } else if (err.response) {
+        // Handle axios error responses
+        errorMessage = err.response.data?.message || 'Sign in failed';
       }
       setError(errorMessage);
       toast.error(errorMessage);
@@ -53,8 +63,8 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-auto flex flex-col items-center justify-center bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=2342&q=80')] bg-cover bg-center">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm" />
+    <div className="min-h-auto flex flex-col items-center justify-center bg-cover bg-center">
+      <div className="absolute inset-0 backdrop-blur-sm" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

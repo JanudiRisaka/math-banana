@@ -8,7 +8,6 @@ import Actions from '../components/Profile/Actions';
 import UpdateModal from '../components/Profile/UpdateModal';
 import DeleteModal from '../components/Profile/DeleteModal';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
 
 const Profile = () => {
   const { user: authUser, updateUser, isLoading: authLoading, error: authError } = useAuth();
@@ -25,15 +24,8 @@ const Profile = () => {
 
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Fetch user profile on component mount
-    fetchUserProfile().catch(err => {
-      console.error('Error fetching profile:', err);
-      toast.error('Failed to load profile');
-    });
-  }, []);
 
   // Navigation handling
   useEffect(() => {
@@ -45,12 +37,20 @@ const Profile = () => {
   // Profile data fetching using UserContext
   useEffect(() => {
     if (authUser && !userProfile) {
-      fetchUserProfile().catch(err => {
-        console.error('Error fetching profile:', err);
-        if (err.message?.includes('Not Authorized')) {
-          navigate('/signin');
+      const loadProfile = async () => {
+        try {
+          setFetchError(null);
+          await fetchUserProfile(true); // Force refresh
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+          setFetchError(err.message);
+          if (err.message?.includes('Not Authorized') || err.message?.includes('401')) {
+            navigate('/signin');
+          }
         }
-      });
+      };
+
+      loadProfile();
     }
   }, [authUser, userProfile, fetchUserProfile, navigate]);
 
@@ -64,13 +64,13 @@ const Profile = () => {
   }
 
   // Handle error state
-  if (authError || userError) {
+  if (authError || userError || fetchError) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6 text-red-400 text-center">
-        {authError || userError}
+        <p className="mb-4">{authError || userError || fetchError}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-2 text-yellow-400 hover:text-yellow-300"
+          className="mt-2 px-4 py-2 bg-yellow-500 text-black rounded hover:bg-yellow-400"
         >
           Try Again
         </button>
@@ -86,7 +86,7 @@ const Profile = () => {
   const handleUpdateProfile = async (updateData) => {
     try {
       const updatedUser = await updateProfile(updateData);
-      updateUser(updatedUser);
+      updateUser(updatedUser);  // Pass the updated user data
       setShowUpdateModal(false);
     } catch (err) {
       console.error('Update error:', err);
@@ -96,10 +96,9 @@ const Profile = () => {
   const handleDeleteAccount = async () => {
     try {
       await deleteAccount();
-      toast.success('Account deleted successfully');
-      navigate('/');  // Redirect to home page after successful deletion
+      navigate('/signup');
     } catch (err) {
-      toast.error('Failed to delete account: ' + err.message);
+      console.error('Delete error:', err);
     }
   };
 
@@ -108,7 +107,7 @@ const Profile = () => {
       <div className="inset-0 from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm">
         <div className="relative z-10 w-full max-w-2xl">
           <div className="p-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 shadow-xl">
-            <ProfileHeader user={userProfile || authUser}  />
+            <ProfileHeader user={userProfile || authUser} />
 
             {/* Pass stats directly from userContext */}
             <ProfileStats stats={userStats} />
@@ -127,7 +126,7 @@ const Profile = () => {
           showModal={showUpdateModal}
           onCancel={() => setShowUpdateModal(false)}
           onUpdate={handleUpdateProfile}
-          currentAvatar={userProfile?.avatar || user?.avatar}
+          currentAvatar={userProfile?.avatar || authUser?.avatar}
         />
       )}
 

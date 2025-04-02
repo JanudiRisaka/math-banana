@@ -21,7 +21,7 @@ const DeleteModal = ({ showModal, onCancel, onDelete }) => {
 
   return showModal ? (
     <div className="fixed inset-0 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-1.2.1&auto=format&fit=crop&w=2342&q=80')] bg-cover bg-center z-50">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm" />
+      <div className="absolute inset-0  backdrop-blur-sm" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

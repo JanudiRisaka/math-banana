@@ -1,42 +1,80 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export const useAudio = (url, initialMuted = true) => {
-  const [audio] = useState(() => {
-    const a = new Audio(url);
-    a.muted = initialMuted;
-    a.loop = true;
-    return a;
-  });
-
+  const audioRef = useRef(null);
   const [isMuted, setIsMuted] = useState(initialMuted);
+  const [isReady, setIsReady] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
+  // Create audio element only once
   useEffect(() => {
-    const handleFirstPlay = () => {
-      audio
-        .play()
-        .then(() => {
-          document.removeEventListener('click', handleFirstPlay);
-        })
-        .catch((error) => {
-          console.log('Still unable to play:', error);
-        });
-    };
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.muted = initialMuted;
+    audio.preload = 'auto';
+    audioRef.current = audio;
 
-    // Try to play the audio immediately.
-    audio.play().catch((error) => {
-      console.log('Autoplay blocked, waiting for user interaction.');
-      document.addEventListener('click', handleFirstPlay);
+    audio.addEventListener('canplaythrough', () => {
+      setIsReady(true);
     });
 
     return () => {
       audio.pause();
-      document.removeEventListener('click', handleFirstPlay);
+      audio.src = '';
+      audioRef.current = null;
     };
-  }, [audio]);
+  }, [url]);
 
+  // Track user interaction with the document
   useEffect(() => {
+    const handleInteraction = () => {
+      setHasInteracted(true);
+    };
+
+    // Add multiple interaction event listeners
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, []);
+
+  // Handle playback based on state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !isReady) return;
+
+    // Only attempt to play if the user has interacted and audio isn't muted
+    if (hasInteracted && !isMuted) {
+      audio.muted = false; // Ensure not muted
+      const playPromise = audio.play();
+
+      // Handle play promise to avoid uncaught promise errors
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            // Playback started successfully
+          })
+          .catch(error => {
+            console.log('Playback prevented:', error);
+            // Don't show errors to users in production
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('Audio playback failed:', error);
+            }
+          });
+      }
+    } else {
+      audio.pause();
+    }
+
+    // Always update muted status
     audio.muted = isMuted;
-  }, [isMuted, audio]);
+  }, [isMuted, hasInteracted, isReady]);
 
   const toggleMute = () => setIsMuted(!isMuted);
 

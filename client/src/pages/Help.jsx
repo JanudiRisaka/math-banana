@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';
+import helpExample from '../assets/helpExample.png';
 import { HelpCircle, Star, Shield, Heart, Timer } from 'lucide-react';
 
 const Help = () => {
@@ -28,10 +29,18 @@ const Help = () => {
               Game Overview
             </h2>
             <p className="text-gray-200">
-              Bunona is an exciting puzzle game where you need to solve banana-themed mathematical
+              Math Banana is an exciting puzzle game where you need to solve banana-themed mathematical
               puzzles. Look at the pattern in the image and determine the correct number (0-9)
               that completes the sequence.
             </p>
+            {/* Help Image */}
+            <div className="mt-4 flex justify-center">
+              <img
+                src={helpExample}  // Use imported image
+                alt="Example gameplay showing banana-themed math puzzle"
+                className="rounded-lg border-2 border-banana-dark w-full max-w-xs md:max-w-sm"
+              />
+            </div>
           </section>
 
           {/* Difficulty Levels */}

@@ -9,13 +9,13 @@ const Game = () => {
   const [gameState, setGameState] = useState('difficulty');
   const [difficulty, setDifficulty] = useState('low');
   const [finalScore, setFinalScore] = useState(0);
-  const { resetGame } = useGame();
+  const { resetGame, fetchLeaderboard } = useGame();
 
-  // Clean up on component mount
   useEffect(() => {
     resetGame();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchLeaderboard();
+    return () => resetGame();
+  }, [resetGame, fetchLeaderboard]);
 
   const handleDifficultySelect = useCallback((selectedDifficulty) => {
     setDifficulty(selectedDifficulty);

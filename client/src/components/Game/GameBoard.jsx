@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Timer, Trophy } from 'lucide-react';
 import { Button } from '../Layout/Button';
 import { useGame } from '../../context/GameContext';
+import { useAuth } from '../../context/AuthContext'; // Import AuthContext
 
 const DIFFICULTY_SETTINGS = {
   low: { time: 60, multiplier: 1 },
@@ -16,17 +17,20 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     setScore,
     lives,
     setLives,
+    isGameOver,
     setIsGameOver,
     saveScore
   } = useGame();
+
+  // Use the AuthContext
+  const { isAuthenticated, user } = useAuth();
 
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [timeLeft, setTimeLeft] = useState(DIFFICULTY_SETTINGS[difficulty].time);
   const [answer, setAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const timerRef = useRef();
+  const timerRef = useRef(null);
   const mounted = useRef(true);
 
   const fetchNewQuestion = useCallback(async () => {
@@ -35,11 +39,11 @@ const GameBoard = ({ difficulty, onGameOver }) => {
       setIsLoading(true);
       const response = await fetch('https://marcconrad.com/uob/banana/api.php');
       const data = await response.json();
-      mounted.current && setCurrentQuestion(data);
+      if (mounted.current) setCurrentQuestion(data);
     } catch (err) {
-      mounted.current && setError('Failed to fetch question. Please try again.');
+      if (mounted.current) setError('Failed to fetch question. Please try again.');
     } finally {
-      mounted.current && setIsLoading(false);
+      if (mounted.current) setIsLoading(false);
     }
   }, []);
 
@@ -52,75 +56,92 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     };
   }, [fetchNewQuestion]);
 
-  const handleGameEnd = useCallback(async (finalScore, won) => {
-    if (isSaving || !mounted.current) return;
-
-    try {
-      setIsSaving(true);
+  useEffect(() => {
+    const endGame = async () => {
       clearInterval(timerRef.current);
-      setIsGameOver(true);
+      if (mounted.current) {
+        // First save the score, then set game over state
+        try {
+          // Only try to save score if authenticated
+          if (isAuthenticated) {
+            await saveScore(score, lives > 0);
+          }
+        } catch (error) {
+          console.error("Failed to save score:", error);
+        } finally {
+          setIsGameOver(true);
+          onGameOver(score);
+        }
+      }
+    };
 
-      await saveScore(finalScore, won);
-      onGameOver(finalScore);
-    } catch (err) {
-      console.error("Error ending game:", err);
-      setError(`Failed to save score: ${err.message}`);
-      onGameOver(finalScore);
-    } finally {
-      setIsSaving(false);
+    if ((lives <= 0 || timeLeft <= 0) && !isGameOver) {
+      // Use isAuthenticated from AuthContext
+      if (isAuthenticated) {
+        endGame();
+      } else {
+        setIsGameOver(true);
+        onGameOver(score);
+      }
     }
-  }, [saveScore, onGameOver, setIsGameOver, isSaving]);
+  }, [lives, timeLeft, score, isGameOver, onGameOver, saveScore, setIsGameOver, isAuthenticated]);
 
   useEffect(() => {
-    if (!mounted.current) return;
-
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          // Don't call handleGameEnd here, just prepare for it
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeLeft(prev => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timerRef.current);
   }, [difficulty]);
 
-  // Effect to handle time-out game over
-  useEffect(() => {
-    if (timeLeft === 0 && mounted.current) {
-      handleGameEnd(score, score > 50);
-    }
-  }, [timeLeft, score, handleGameEnd]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!currentQuestion || !mounted.current || isSaving) return;
+
+    if (!currentQuestion || isGameOver) {
+      return;
+    }
+
+    // Check authentication using AuthContext
+    if (!isAuthenticated) {
+      // Store current game state in sessionStorage
+      sessionStorage.setItem('gameState', JSON.stringify({ score, lives, difficulty }));
+
+      // Show error and redirect to login after a short delay
+      setError('Please log in to submit your answer. Redirecting to login page...');
+
+      setTimeout(() => {
+        window.location.href = '/signin';
+      }, 2000);
+
+      return;
+    }
 
     const isCorrect = Number(answer) === currentQuestion.solution;
-
-    if (isCorrect) {
-      const points = Math.floor(100 * DIFFICULTY_SETTINGS[difficulty].multiplier);
-      setScore(prev => prev + points);
-      setAnswer('');
-      await fetchNewQuestion();
-    } else {
-      setLives(prev => {
-        const newLives = prev - 1;
-        if (newLives === 0) {
-          // Queue the game end but don't call immediately to avoid race conditions
-          setTimeout(() => handleGameEnd(score, false), 0);
-        }
-        return newLives;
-      });
-      setAnswer('');
+    try {
+      if (isCorrect) {
+        const points = Math.floor(100 * DIFFICULTY_SETTINGS[difficulty].multiplier);
+        setScore(prev => prev + points);
+        setAnswer('');
+        await fetchNewQuestion();
+      } else {
+        setLives(prev => {
+          const newLives = prev - 1;
+          return Math.max(0, newLives);
+        });
+        setAnswer('');
+      }
+    } catch (error) {
+      if (mounted.current) {
+        setError(`Error: ${error.message}`);
+      }
     }
   };
 
   const handleRetry = useCallback(() => {
-    mounted.current && fetchNewQuestion();
+    if (mounted.current) {
+      setError('');
+      fetchNewQuestion();
+    }
   }, [fetchNewQuestion]);
 
   return (
@@ -130,6 +151,23 @@ const GameBoard = ({ difficulty, onGameOver }) => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-6"
       >
+        {/* Authentication Status - Optional UI indicator */}
+        {!isAuthenticated && (
+          <div className="bg-amber-500/20 border border-amber-500/50 text-amber-200 px-4 py-2 rounded-md mb-4 text-sm flex items-center justify-between">
+            <span>Playing as guest. Log in to save your scores!</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => {
+                sessionStorage.setItem('gameState', JSON.stringify({ score, lives, difficulty }));
+                window.location.href = '/signin';
+              }}
+            >
+              Login
+            </Button>
+          </div>
+        )}
+
         {/* Game Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-2">
@@ -209,10 +247,16 @@ const GameBoard = ({ difficulty, onGameOver }) => {
               min="0"
               max="9"
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={(e) => {
+                if (e.target.value === '') {
+                  setAnswer('');
+                  return;
+                }
+                const value = Math.min(9, Math.max(0, parseInt(e.target.value) || 0));
+                setAnswer(value.toString());
+              }}
               className="w-24 h-24 text-4xl text-center bg-white/5 border-2 border-yellow-400/50 rounded-lg focus:border-yellow-400 focus:outline-none text-white"
               placeholder="?"
-              disabled={isSaving}
             />
           </div>
           <Button
@@ -220,7 +264,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
             variant="fantasy"
             size="lg"
             className="w-full max-w-xs"
-            disabled={!answer || isLoading || isSaving}
+            disabled={!answer || isLoading || isGameOver}
           >
             Submit Answer
           </Button>

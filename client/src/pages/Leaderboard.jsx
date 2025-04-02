@@ -1,12 +1,13 @@
+// Leaderboard.jsx
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Crown, Medal, User, Clock } from 'lucide-react';
+import { Trophy, Crown, Medal, Clock } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 
 const Leaderboard = () => {
   const { user } = useAuth();
-  const { leaderboard, fetchLeaderboard, isLeaderboardLoading, error, clearError } = useGame();
+  const { leaderboard, fetchLeaderboard, isLoading, error } = useGame();
 
   const getInitials = (name) => {
     if (!name) return '?';
@@ -22,10 +23,15 @@ const Leaderboard = () => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
-  // Add safe value handling
-  const getSafeHighScore = (entry) => {
-    // Check both possible locations for the score
-    return entry.highScore ?? entry.score ?? 0;
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getRankIcon = (rank) => {
@@ -37,7 +43,7 @@ const Leaderboard = () => {
     }
   };
 
-  if (isLeaderboardLoading) {
+  if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6 flex justify-center">
         <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
@@ -50,7 +56,7 @@ const Leaderboard = () => {
       <div className="w-full max-w-4xl mx-auto p-6 text-red-400 text-center">
         {error}
         <button
-          onClick={clearError}
+          onClick={fetchLeaderboard}
           className="mt-2 text-yellow-400 hover:text-yellow-300"
         >
           Try Again
@@ -101,23 +107,22 @@ const Leaderboard = () => {
                     </span>
                   </div>
                 )}
-<div>
+                <div>
                   <h3 className="text-gray-300 font-semibold">
                     {entry.user?.username || 'Anonymous'}
                   </h3>
                   <div className="flex items-center text-gray-300 text-sm">
                     <Clock className="w-3 h-3 mr-1" />
-                    <span>Last active: {entry.last_active || 'N/A'}</span>
+                    <span>{formatDate(entry.updatedAt)}</span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-yellow-400 font-bold text-xl">
-                  {/* Add safe value handling */}
-                  {getSafeHighScore(entry).toLocaleString()}
+                  {entry.highScore.toLocaleString()}
                 </div>
                 <div className="text-gray-400 text-sm">
-                  Level {Math.floor(getSafeHighScore(entry) / 1000)}
+                  Level {Math.floor(entry.highScore / 1000)}
                 </div>
               </div>
             </motion.div>

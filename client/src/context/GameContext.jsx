@@ -1,137 +1,173 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from './AuthContext'; // Import AuthContext
 
 const GameContext = createContext();
 
-export const GameProvider = ({ children }) => {
+export function GameProvider({ children }) {
+  const { isAuthenticated } = useAuth(); // Use AuthContext
+
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [error, setError] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [highScore, setHighScore] = useState(0);
+  const [dailyStreak, setDailyStreak] = useState(0);
+  const [lastPlayedDate, setLastPlayedDate] = useState(null);
 
-  // Add a saveInProgress ref to prevent duplicate saves
-  const saveInProgress = useRef(false);
+  // Axios instance with base configuration
+  const api = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+    withCredentials: true // This is important for cookie authentication
+  });
 
-  const saveScore = useCallback(async (scoreOrData, wonParam = undefined) => {
-    // Prevent duplicate saves
-    if (saveInProgress.current) {
-      console.log('[DEBUG] Save already in progress, skipping duplicate request');
-      return;
-    }
-
-    saveInProgress.current = true;
-
-    // Handle both parameter styles:
-    // 1. saveScore(400, true)
-    // 2. saveScore({ finalScore: 400, won: true })
-    let finalScore, won;
-
-    if (typeof scoreOrData === 'object' && scoreOrData !== null) {
-      // Handle object parameter style
-      finalScore = scoreOrData.finalScore;
-      won = scoreOrData.won;
-    } else {
-      // Handle individual parameters style
-      finalScore = scoreOrData;
-      won = wonParam;
-    }
-
-    console.log('[DEBUG] Processed saveScore params:', { finalScore, won });
-
-    try {
-      console.log('[DEBUG] Sending to:', `${import.meta.env.VITE_API_BASE_URL}/api/game/scores`);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/game/scores`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Cookies will be sent automatically.
-        body: JSON.stringify({ score: finalScore, won }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[Frontend] Save score error response:', errorData);
-        throw new Error(errorData.message || 'Score save failed');
+  // No need for token-based interceptor since we're using cookie auth
+  // But we'll keep the response interceptor for error handling
+  api.interceptors.response.use(
+    response => response,
+    error => {
+      if (error.response?.status === 401) {
+        // Redirect to login on 401 responses
+        window.location.href = '/signin';
       }
-
-      const data = await response.json();
-      // Reset the game score and update highScore if necessary.
-      setHighScore(prev => Math.max(prev, finalScore));
-      console.log('[Frontend] Save score success:', data);
-      return data;
-    } catch (error) {
-      console.error('[Frontend] Score save error:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      // Always reset the saveInProgress flag, even on error
-      saveInProgress.current = false;
+      return Promise.reject(error);
     }
-  }, []);
+  );
 
-  const fetchLeaderboard = useCallback(async () => {
-    setIsLeaderboardLoading(true);
+  // Fetch user stats on initial load
+  const fetchUserStats = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    setIsLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/game/leaderboard`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch leaderboard');
+      const { data } = await api.get('/api/game/stats');
 
-      const { data } = await response.json();
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid leaderboard data format');
+      if (data.success) {
+        setHighScore(data.data.highScore || 0);
+        setDailyStreak(data.data.dailyStreak || 0);
+        setLastPlayedDate(data.data.lastPlayedDate || null);
       }
-
-      const processedData = data.map(entry => ({
-        user: entry.user,
-        highScore: entry.highScore,
-        last_active: entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : 'N/A'
-      }));
-      setLeaderboard(processedData);
     } catch (error) {
-      console.error('Leaderboard fetch error:', error);
-      setError(error.message);
+      console.error('Error fetching user stats:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to load user stats');
     } finally {
-      setIsLeaderboardLoading(false);
+      setIsLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
+
+  // Initialize user data when auth state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserStats();
+    }
+  }, [isAuthenticated, fetchUserStats]);
 
   const resetGame = useCallback(() => {
     setScore(0);
     setLives(3);
     setIsGameOver(false);
     setError(null);
-    // Reset the saveInProgress flag when starting a new game
-    saveInProgress.current = false;
   }, []);
 
-  const clearError = useCallback(() => setError(null), []);
+  const saveScore = useCallback(async (finalScore, won) => {
+    if (!isAuthenticated) {
+      return Promise.reject(new Error('Not authenticated'));
+    }
+
+    setIsLoading(true);
+    try {
+      // Include the current date in the request to help the server calculate streaks
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data } = await api.post('/api/game/scores', {
+        score: finalScore,
+        won,
+        playedDate: today
+      });
+
+      if (data.success) {
+        // Update state with new values from backend
+        setHighScore(data.data.highScore);
+        setDailyStreak(data.data.dailyStreak);
+        setLastPlayedDate(today);
+        return data.data;
+      } else {
+        throw new Error(data.message || 'Failed to save score');
+      }
+    } catch (error) {
+      console.error('Error saving score:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to save score');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  const fetchLeaderboard = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data } = await api.get('/api/game/leaderboard');
+
+      if (data.success) {
+        setLeaderboard(
+          data.data.map(entry => ({
+            ...entry,
+            _id: entry._id || `leaderboard-${Math.random()}`,
+            user: entry.user || { username: 'Anonymous', avatar: '' },
+            highScore: entry.highScore || 0
+          }))
+        );
+      } else {
+        throw new Error(data.message || 'Failed to load leaderboard');
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to load leaderboard');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Automatically fetch leaderboard on mount if user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchLeaderboard();
+    }
+  }, [fetchLeaderboard, isAuthenticated]);
+
+  const value = {
+    // State
+    score,
+    lives,
+    isGameOver,
+    leaderboard,
+    isLoading,
+    error,
+    highScore,
+    dailyStreak,
+    lastPlayedDate,
+
+    // Methods
+    resetGame,
+    saveScore,
+    fetchLeaderboard,
+    fetchUserStats,
+
+    // Setters
+    setScore,
+    setLives,
+    setIsGameOver,
+    setError
+  };
 
   return (
-    <GameContext.Provider
-      value={{
-        score,
-        setScore,
-        highScore,
-        setHighScore,
-        lives,
-        setLives,
-        isGameOver,
-        setIsGameOver,
-        resetGame,
-        saveScore,
-        leaderboard,
-        fetchLeaderboard,
-        isLeaderboardLoading,
-        error,
-        clearError
-      }}
-    >
+    <GameContext.Provider value={value}>
       {children}
     </GameContext.Provider>
   );
-};
+}
 
 export const useGame = () => {
   const context = useContext(GameContext);

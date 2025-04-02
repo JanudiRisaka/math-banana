@@ -89,7 +89,7 @@ const handleSubmit = async (e) => {
     // JSX remains the same as original
     return (
       <div className="min-h-auto flex flex-col items-center justify-center bg-cover bg-center">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#001B3D]/90 to-[#000B1A]/90 backdrop-blur-sm" />
+      <div className="absolute inset-0 backdrop-blur-sm" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

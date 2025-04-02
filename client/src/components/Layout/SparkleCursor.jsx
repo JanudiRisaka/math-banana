@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import Lottie from 'react-lottie';
-import { useTheme } from '@emotion/react';
+import Lottie from 'lottie-react';
 import SparklesAnimation from '../../assets/Sparkles.json';
 
 const SparkleCursor = () => {
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [isVisible, setIsVisible] = useState(true);
 
-  const defaultOptions = {
+  // Lottie options object instead of individual props
+  const lottieOptions = {
+    animationData: SparklesAnimation,
     loop: true,
     autoplay: true,
-    animationData: SparklesAnimation,
     rendererSettings: {
       preserveAspectRatio: 'xMidYMid slice'
     }
   };
 
+  // Event handlers (same as before)
   useEffect(() => {
     const handleMouseMove = (e) => {
       setCursorPos({ x: e.clientX, y: e.clientY });
@@ -41,7 +42,7 @@ const SparkleCursor = () => {
 
   return (
     <div
-      className="fixed pointer-events-none z-[9999] transition-transform duration-50"
+      className="fixed pointer-events-none z-[9999]"
       style={{
         left: cursorPos.x,
         top: cursorPos.y,
@@ -51,11 +52,7 @@ const SparkleCursor = () => {
         height: '40px',
       }}
     >
-      <Lottie
-        options={defaultOptions}
-        isClickToPauseDisabled={true}
-        style={{ pointerEvents: 'none' }}
-      />
+      <Lottie {...lottieOptions} />
     </div>
   );
 };

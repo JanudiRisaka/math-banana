@@ -1,130 +1,144 @@
-// game.controller.js (Backend)
 import Game from '../models/game.model.js';
 import mongoose from 'mongoose';
 
-// Enhanced date comparison utility
-const isConsecutiveDay = (previousDate, currentDate) => {
-  const prev = new Date(previousDate);
-  const curr = new Date(currentDate);
-  prev.setHours(0, 0, 0, 0);
-  curr.setHours(0, 0, 0, 0);
-  return Math.floor((curr - prev) / (1000 * 60 * 60 * 24)) === 1;
-};
+const isSameDay = (date1, date2) => (
+  date1.getFullYear() === date2.getFullYear() &&
+  date1.getMonth() === date2.getMonth() &&
+  date1.getDate() === date2.getDate()
+);
 
-export const createGameData = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
+// 1. Add getUserStats controller to handle /api/game/stats endpoint
+export const getUserStats = async (req, res) => {
   try {
-    console.log('[Game Controller] Starting transaction for user:', req.user.userId);
-    const { score: rawScore, won: rawWon } = req.body;
     const userId = req.user.userId;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      console.error('Invalid user ID:', userId);
-      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+      return res.status(401).json({ success: false, message: 'Invalid user ID' });
     }
 
-    const score = Math.round(Number(rawScore));
-    const won = Boolean(rawWon);
+    const gameData = await Game.findOne({ user: userId });
 
-    console.log(`Processing score: ${score}, won: ${won} for user: ${userId}`);
-
-    if (isNaN(score) || typeof won !== 'boolean') {
-      console.error('Invalid request data types:', { score: typeof rawScore, won: typeof rawWon });
-      return res.status(400).json({ success: false, message: 'Invalid request format' });
+    if (!gameData) {
+      // New user, return defaults
+      return res.status(200).json({
+        success: true,
+        data: {
+          highScore: 0,
+          dailyStreak: 0,
+          lastPlayedDate: null,
+          gamesPlayed: 0,
+          wins: 0
+        }
+      });
     }
-
-    if (score < 0 || score > 2147483647) {
-      console.error('Score out of range:', score);
-      return res.status(400).json({ success: false, message: 'Invalid score value' });
-    }
-
-    // Create the increment object for wins properly
-    const increment = {
-      score: score,
-      gamesPlayed: 1
-    };
-
-    // Only increment wins if won is true
-    if (won === true) {
-      increment.wins = 1;
-    }
-
-    // Initial update operation
-    const baseUpdate = {
-      $inc: increment,
-      $max: { highScore: score },
-      $set: { lastPlayed: new Date() },
-      $setOnInsert: {
-        dailyStreak: 1 // Initialize streak on first insert
-      }
-    };
-
-    console.log('Debug - Base update operation:', JSON.stringify(baseUpdate));
-
-    const options = {
-      new: true,
-      upsert: true,
-      session,
-      projection: { lastPlayed: 1, dailyStreak: 1 },
-      runValidators: true
-    };
-
-    console.log('Executing findOneAndUpdate with:', { baseUpdate, options });
-    const gameData = await Game.findOneAndUpdate(
-      { user: userId },
-      baseUpdate,
-      options
-    ).populate('user', 'username email');
-
-    console.log('Initial update result:', gameData);
-
-    // Daily streak calculation
-    const now = new Date();
-    const lastPlayed = gameData.lastPlayed || now;
-    const isStreakValid = isConsecutiveDay(lastPlayed, now);
-
-    const streakUpdate = isStreakValid
-      ? { $inc: { dailyStreak: 1 } }
-      : { $set: { dailyStreak: 1 } };
-
-    console.log(`Applying streak update: ${JSON.stringify(streakUpdate)}`);
-    await Game.updateOne(
-      { _id: gameData._id },
-      streakUpdate,
-      { session }
-    );
-
-    await session.commitTransaction();
-    console.log('Transaction committed successfully');
-
-    // Fetch final updated document
-    const updatedData = await Game.findById(gameData._id)
-      .populate('user', 'username email')
-      .lean();
-
-    console.log('Final game data:', updatedData);
 
     res.status(200).json({
       success: true,
       data: {
-        score: updatedData.score,
-        highScore: updatedData.highScore,
-        gamesPlayed: updatedData.gamesPlayed,
-        wins: updatedData.wins,
-        dailyStreak: updatedData.dailyStreak,
-        lastPlayed: updatedData.lastPlayed
+        highScore: gameData.highScore || 0,
+        dailyStreak: gameData.dailyStreak || 0,
+        lastPlayedDate: gameData.lastPlayed,
+        gamesPlayed: gameData.gamesPlayed || 0,
+        wins: gameData.wins || 0
       }
     });
+  } catch (error) {
+    console.error('Get user stats error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user stats' });
+  }
+};
 
+// 2. Fixed saveScore function (renamed from createGameData for clarity)
+export const createGameData  = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const userId = req.user.userId;
+    const { score, won, playedDate } = req.body; // Match frontend request format
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      await session.abortTransaction();
+      return res.status(401).json({ success: false, message: 'Invalid user ID' });
+    }
+
+    const existing = await Game.findOne({ user: userId }).session(session);
+
+    // Calculate streak
+    let dailyStreak = 1; // Default for new players
+    let incrementBestStreak = false;
+
+    if (existing?.lastPlayed) {
+      const today = playedDate ? new Date(playedDate) : new Date();
+      const lastPlayedDate = new Date(existing.lastPlayed);
+
+      if (isSameDay(today, lastPlayedDate)) {
+        // Already played today, keep streak the same
+        dailyStreak = existing.dailyStreak || 1;
+      } else {
+        // Check if last played was yesterday
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (isSameDay(lastPlayedDate, yesterday)) {
+          // Played yesterday, increment streak
+          dailyStreak = (existing.dailyStreak || 0) + 1;
+          incrementBestStreak = true;
+        } else {
+          // Streak broken, reset to 1
+          dailyStreak = 1;
+        }
+      }
+    }
+
+    // Calculate high score
+    const currentHighScore = existing?.highScore || 0;
+    const newHighScore = Math.max(currentHighScore, score);
+
+    // Build update object
+    const update = {
+      $set: {
+        highScore: newHighScore,
+        lastPlayed: playedDate ? new Date(playedDate) : new Date(),
+        dailyStreak: dailyStreak
+      },
+      $inc: {
+        gamesPlayed: 1,
+        ...(won && { wins: 1 })
+      }
+    };
+
+    // Increment best streak if needed
+    if (incrementBestStreak) {
+      const currentBestStreak = existing?.bestStreak || 0;
+      if (dailyStreak > currentBestStreak) {
+        update.$set.bestStreak = dailyStreak;
+      }
+    } else if (!existing?.bestStreak) {
+      // Initialize best streak for new users
+      update.$set.bestStreak = 1;
+    }
+
+    const result = await Game.findOneAndUpdate(
+      { user: userId },
+      update,
+      { new: true, upsert: true, session }
+    );
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        dailyStreak: result.dailyStreak,
+        highScore: result.highScore,
+        lastPlayedDate: result.lastPlayed // Match frontend property name
+      }
+    });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Transaction aborted due to error:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Game data processing failed'
-    });
+    console.error('Save score error:', error);
+    res.status(500).json({ success: false, message: 'Failed to save score' });
   } finally {
     session.endSession();
   }
@@ -150,7 +164,7 @@ export const getLeaderboard = async (req, res) => {
       { $unwind: '$user' },
       {
         $project: {
-          _id: 0,
+          _id: 1, // Include ID for frontend identification
           user: {
             username: 1,
             avatar: 1
@@ -165,7 +179,6 @@ export const getLeaderboard = async (req, res) => {
       success: true,
       data: leaderboard
     });
-
   } catch (error) {
     console.error('Leaderboard error:', error);
     res.status(500).json({

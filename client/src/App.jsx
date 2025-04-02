@@ -35,7 +35,7 @@ export default function App() {
         background: 'linear-gradient(to bottom, #001B3D/90, #000B1A/90)'
       }}
     >
- <SparkleCursor />
+    <SparkleCursor />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
