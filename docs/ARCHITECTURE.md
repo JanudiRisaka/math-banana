@@ -17,7 +17,7 @@ The primary goals of this architecture are:
 *   **Description:** The UI is broken down into reusable, independent components. These are primarily functional components utilizing React Hooks.
 *   **Implementation:**
     *   **Pages (`src/pages/`):** Top-level components representing distinct application views (e.g., `Home`, `SignIn`, `Game`, `Profile`). They primarily orchestrate the layout and assembly of smaller components.
-    *   **Reusable UI Components (`src/components/Layout/`, `src/components/Shared/`):** General-purpose components like `Button`, `Header`, `Footer`, `SparkleCursor`.
+    *   **Reusable UI Components (`src/components/Layout/`, `src/components/Shared/`):** General-purpose components like `Button`, `Header`, `Footer`.
     *   **Feature-Specific Components (`src/components/Auth/`, `src/components/Game/`, `src/components/Profile/`):** Components tailored to specific features, like `OtpInput`, `DifficultySelect`, `GameBoard`, `ProfileStats`.
 *   **Cohesion:** High. Each component typically encapsulates a specific piece of UI and its associated logic (e.g., `OtpInput` handles OTP entry logic, `GameBoard` manages the game loop UI).
 

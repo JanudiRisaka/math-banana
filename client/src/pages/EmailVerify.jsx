@@ -20,7 +20,6 @@ const EmailVerify = () => {
     const verifyState = () => {
       if (!location.state?.email || !location.state?.fromSignUp) {
         console.warn('Invalid access - redirecting to signup');
-        navigate('/signup');
         return;
       }
 
@@ -61,7 +60,9 @@ const EmailVerify = () => {
 
       if (data.success) {
         toast.success('Email verified successfully!');
+
         navigate('/');
+        window.location.reload();
       } else {
         toast.error(data.message || 'Verification failed');
       }

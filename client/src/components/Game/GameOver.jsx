@@ -20,6 +20,7 @@ const GameOver = ({ score, onRestart }) => {
 
   const handleNavigation = (path) => {
     navigate(path);
+    window.location.reload();
   };
 
   // Dynamic content based on win/loss

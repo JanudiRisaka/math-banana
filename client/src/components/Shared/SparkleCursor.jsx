@@ -1,60 +1,59 @@
-import React, { useEffect, useState } from 'react';
-import Lottie from 'lottie-react';
-import SparklesAnimation from '../../assets/animations/Sparkles.json';
+// import React, { useRef, useEffect } from 'react';
 
-const SparkleCursor = () => {
-  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
-  const [isVisible, setIsVisible] = useState(true);
+// const SimpleCursor = () => {
+//   const cursorRef = useRef(null);
+//   const pos = useRef({ x: 0, y: 0 });
 
-  // Lottie options object instead of individual props
-  const lottieOptions = {
-    animationData: SparklesAnimation,
-    loop: true,
-    autoplay: true,
-    rendererSettings: {
-      preserveAspectRatio: 'xMidYMid slice'
-    }
-  };
+//   useEffect(() => {
+//     const cursor = cursorRef.current;
+//     if (!cursor) return;
 
-  // Event handlers (same as before)
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setCursorPos({ x: e.clientX, y: e.clientY });
-    };
+//     // Update cursor position using requestAnimationFrame
+//     const updatePosition = () => {
+//       cursor.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px)`;
+//       requestAnimationFrame(updatePosition);
+//     };
+//     updatePosition();
 
-    const handleMouseLeave = () => setIsVisible(false);
-    const handleMouseEnter = () => setIsVisible(true);
+//     // Mouse move handler
+//     const handleMouseMove = (e) => {
+//       pos.current.x = e.clientX;
+//       pos.current.y = e.clientY;
+//     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    document.body.addEventListener('mouseleave', handleMouseLeave);
-    document.body.addEventListener('mouseenter', handleMouseEnter);
+//     // Visibility handlers
+//     const handleHide = () => cursor.style.opacity = '0';
+//     const handleShow = () => cursor.style.opacity = '1';
 
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.body.removeEventListener('mouseleave', handleMouseLeave);
-      document.body.removeEventListener('mouseenter', handleMouseEnter);
-    };
-  }, []);
+//     window.addEventListener('mousemove', handleMouseMove);
+//     document.addEventListener('mouseleave', handleHide);
+//     document.addEventListener('mouseenter', handleShow);
 
-  if (typeof window === 'undefined' || window.matchMedia('(pointer: coarse)').matches) {
-    return null;
-  }
+//     return () => {
+//       window.removeEventListener('mousemove', handleMouseMove);
+//       document.removeEventListener('mouseleave', handleHide);
+//       document.removeEventListener('mouseenter', handleShow);
+//     };
+//   }, []);
 
-  return (
-    <div
-      className="fixed pointer-events-none z-[9999]"
-      style={{
-        left: cursorPos.x,
-        top: cursorPos.y,
-        transform: 'translate(-50%, -50%)',
-        opacity: isVisible ? 1 : 0,
-        width: '40px',
-        height: '40px',
-      }}
-    >
-      <Lottie {...lottieOptions} />
-    </div>
-  );
-};
+//   if (typeof window === 'undefined' || window.matchMedia('(pointer: coarse)').matches) {
+//     return null;
+//   }
 
-export default SparkleCursor;
+//   return (
+//     <div
+//       ref={cursorRef}
+//       className="fixed pointer-events-none z-[9999] w-4 h-4 bg-transparent border-2 border-black rounded-full"
+//       style={{
+//         left: 0,
+//         top: 0,
+//         transform: 'translate(-100px, -100px)',
+//         transition: 'transform 0.1s',
+//         willChange: 'transform',
+//         opacity: 1,
+//       }}
+//     />
+//   );
+// };
+
+// export default SimpleCursor;
