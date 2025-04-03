@@ -38,6 +38,11 @@ const gameSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  lastGameScore: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, { timestamps: true });
 

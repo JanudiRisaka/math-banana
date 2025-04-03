@@ -40,30 +40,20 @@ export const getUserDetails = async (req, res) => {
     };
 
     if (!req.params.userId) {
-      // Get aggregated game stats
-      const stats = await Game.aggregate([
-        { $match: { user: new mongoose.Types.ObjectId(userId) } },
-        {
-          $group: {
-            _id: null,
-            highScore: { $max: "$score" },
-            totalGames: { $sum: 1 },
-            totalScore: { $sum: "$score" },
-            lastPlayed: { $max: "$createdAt" },
-            lastGameScore: { $last: "$score" }
-          }
-        }
-      ]);
+      // Get complete stats from Game document
+      const gameData = await Game.findOne({ user: userId });
 
-      if (stats.length > 0) {
+      if (gameData) {
         gameStats = {
-          highScore: stats[0].highScore || 0,
-          gamesPlayed: stats[0].totalGames || 0,
-          avgScore: stats[0].totalGames > 0
-            ? Math.round(stats[0].totalScore / stats[0].totalGames)
+          highScore: gameData.highScore || 0,
+          gamesPlayed: gameData.gamesPlayed || 0,
+          avgScore: gameData.gamesPlayed > 0
+            ? Math.round(gameData.totalScore / gameData.gamesPlayed)
             : 0,
-          lastPlayed: stats[0].lastPlayed,
-          lastGameScore: stats[0].lastGameScore || 0
+          lastPlayed: gameData.lastPlayed,
+          lastGameScore: gameData.lastGameScore || 0,
+          wins: gameData.wins || 0, // Add this line
+          dailyStreak: gameData.dailyStreak || 0 // Add this line
         };
       }
     }

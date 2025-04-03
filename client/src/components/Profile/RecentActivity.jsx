@@ -11,19 +11,23 @@ const activityDefaults = {
 const RecentActivity = ({ stats }) => {
   const safeStats = { ...activityDefaults, ...(stats || {}) };
 
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'Never played';
-    try {
-      return new Date(dateString).toLocaleString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch {
-      return 'Invalid date';
-    }
-  };
+  // Update formatDateTime to:
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'Never played';
+  try {
+    // Convert to local time
+    const options = {
+      hour: '2-digit',
+      minute: '2-digit',
+      month: 'short',
+      day: 'numeric',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
+    return new Date(dateString).toLocaleString('en-US', options);
+  } catch {
+    return 'Invalid date';
+  }
+};
 
   return (
     <div className="p-6 border-t border-gray-700">

@@ -8,6 +8,7 @@ import Actions from '../components/Profile/Actions';
 import UpdateModal from '../components/Profile/UpdateModal';
 import DeleteModal from '../components/Profile/DeleteModal';
 import { useAuth } from '../context/AuthContext';
+import { useGame } from '../context/GameContext';
 
 const Profile = () => {
   const { user: authUser, updateUser, isLoading: authLoading, error: authError } = useAuth();
@@ -21,6 +22,7 @@ const Profile = () => {
     deleteAccount,
     logout
   } = useUser();
+  const { fetchUserStats } = useGame();
 
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -40,7 +42,8 @@ const Profile = () => {
       const loadProfile = async () => {
         try {
           setFetchError(null);
-          await fetchUserProfile(true); // Force refresh
+          await fetchUserProfile(true);
+          fetchUserStats();
         } catch (err) {
           console.error('Error fetching profile:', err);
           setFetchError(err.message);
@@ -52,7 +55,7 @@ const Profile = () => {
 
       loadProfile();
     }
-  }, [authUser, userProfile, fetchUserProfile, navigate]);
+  }, [authUser, userProfile, fetchUserProfile, fetchUserStats, navigate]);
 
   // Handle loading state
   if (authLoading || userLoading) {

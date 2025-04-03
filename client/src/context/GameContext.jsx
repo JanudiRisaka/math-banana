@@ -16,6 +16,7 @@ export function GameProvider({ children }) {
   const [highScore, setHighScore] = useState(0);
   const [dailyStreak, setDailyStreak] = useState(0);
   const [lastPlayedDate, setLastPlayedDate] = useState(null);
+  const [lastGameScore, setLastGameScore] = useState(0);
 
   // Axios instance with base configuration
   const api = axios.create({
@@ -48,6 +49,7 @@ export function GameProvider({ children }) {
         setHighScore(data.data.highScore || 0);
         setDailyStreak(data.data.dailyStreak || 0);
         setLastPlayedDate(data.data.lastPlayedDate || null);
+        setLastGameScore(data.data.lastGameScore || 0);
       }
     } catch (error) {
       console.error('Error fetching user stats:', error);
@@ -79,7 +81,11 @@ export function GameProvider({ children }) {
     setIsLoading(true);
     try {
       // Include the current date in the request to help the server calculate streaks
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+
+      const localDateString = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
+      .toISOString()
+      .split('T')[0];
 
       const { data } = await api.post('/api/game/scores', {
         score: finalScore,
@@ -148,6 +154,8 @@ export function GameProvider({ children }) {
     highScore,
     dailyStreak,
     lastPlayedDate,
+    lastGameScore,
+    setLastGameScore,
 
     // Methods
     resetGame,

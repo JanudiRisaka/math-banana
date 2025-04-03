@@ -1,11 +1,12 @@
 import Game from '../models/game.model.js';
 import mongoose from 'mongoose';
 
-const isSameDay = (date1, date2) => (
-  date1.getFullYear() === date2.getFullYear() &&
-  date1.getMonth() === date2.getMonth() &&
-  date1.getDate() === date2.getDate()
-);
+const isConsecutiveDay = (date1, date2) => {
+  const oneDay = 24 * 60 * 60 * 1000;
+  const d1 = new Date(date1).setHours(0, 0, 0, 0);
+  const d2 = new Date(date2).setHours(0, 0, 0, 0);
+  return Math.abs(d1 - d2) <= oneDay;
+};
 
 
 // 1. Add getUserStats controller to handle /api/game/stats endpoint
@@ -49,13 +50,13 @@ export const getUserStats = async (req, res) => {
   }
 };
 
-// 2. Fixed saveScore function (renamed from createGameData for clarity)
 export const createGameData  = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
     const userId = req.user.userId;
-    const { score, won, playedDate } = req.body; // Match frontend request format
+    const { score, playedDate } = req.body; // Remove 'won' from destructuring
+    const won = score > 100; // Automatically determine win status
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       await session.abortTransaction();
@@ -64,58 +65,46 @@ export const createGameData  = async (req, res) => {
 
     const existing = await Game.findOne({ user: userId }).session(session);
 
-    // Calculate streak
-    let dailyStreak = 1; // Default for new players
+    // Calculate streak (existing code remains the same)
+    let dailyStreak = 1;
     let incrementBestStreak = false;
 
     if (existing?.lastPlayed) {
       const today = playedDate ? new Date(playedDate) : new Date();
-      const lastPlayedDate = new Date(existing.lastPlayed);
+      const lastPlayed = new Date(existing.lastPlayed);
 
-      if (isSameDay(today, lastPlayedDate)) {
-        // Already played today, keep streak the same
-        dailyStreak = existing.dailyStreak || 1;
+      const lastPlayedLocal = new Date(lastPlayed.toLocaleDateString());
+      const todayLocal = new Date(today.toLocaleDateString());
+
+      if (isConsecutiveDay(lastPlayedLocal, todayLocal)) {
+        dailyStreak = existing.dailyStreak + 1;
       } else {
-        // Check if last played was yesterday
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (isSameDay(lastPlayedDate, yesterday)) {
-          // Played yesterday, increment streak
-          dailyStreak = (existing.dailyStreak || 0) + 1;
-          incrementBestStreak = true;
-        } else {
-          // Streak broken, reset to 1
-          dailyStreak = 1;
-        }
+        dailyStreak = 1;
       }
     }
 
-    // Calculate high score
-    const currentHighScore = existing?.highScore || 0;
-    const newHighScore = Math.max(currentHighScore, score);
-
-    // Build update object
+    // Update the win condition in the update object
     const update = {
       $set: {
-        highScore: newHighScore,
+        highScore: Math.max(existing?.highScore || 0, score),
         lastPlayed: playedDate ? new Date(playedDate) : new Date(),
-        dailyStreak: dailyStreak
+        dailyStreak: dailyStreak,
+        lastGameScore: score,
       },
       $inc: {
         gamesPlayed: 1,
-        ...(won && { wins: 1 })
+        wins: won ? 1 : 0, // Simplified win increment
+        totalScore: score
       }
     };
 
-    // Increment best streak if needed
+    // Best streak logic remains the same
     if (incrementBestStreak) {
       const currentBestStreak = existing?.bestStreak || 0;
       if (dailyStreak > currentBestStreak) {
         update.$set.bestStreak = dailyStreak;
       }
     } else if (!existing?.bestStreak) {
-      // Initialize best streak for new users
       update.$set.bestStreak = 1;
     }
 
@@ -132,7 +121,9 @@ export const createGameData  = async (req, res) => {
       data: {
         dailyStreak: result.dailyStreak,
         highScore: result.highScore,
-        lastPlayedDate: result.lastPlayed // Match frontend property name
+        lastPlayedDate: result.lastPlayed,
+        lastGameScore: result.lastGameScore,
+        wins: result.wins // Include wins in response
       }
     });
   } catch (error) {
