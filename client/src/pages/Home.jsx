@@ -2,11 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Lottie from 'lottie-react';
-import sparklesData from '../assets/Sparkles.json';
+import sparklesData from '../assets/animations/Sparkles.json';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/Layout/Button';
 import { Loader2 } from 'lucide-react';
-import bananaImage from '../assets/banana1.png';
+import bananaImage from '../assets/images/banana1.png';
 
 const Sparkles = ({ top, left }) => {
   return (

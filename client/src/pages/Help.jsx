@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';
-import helpExample from '../assets/helpExample.png';
+import helpExample from '../assets/images/helpExample.png';
 import { HelpCircle, Star, Shield, Heart, Timer } from 'lucide-react';
 
 const Help = () => {

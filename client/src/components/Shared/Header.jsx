@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-react';
-import { Button } from './Button';
+import { Button } from '../Layout/Button.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAudio } from '../../hooks/useAudio.js';
-const backgroundMusicPath = new URL('../../assets/Genshin Impact Main Theme.mp3', import.meta.url).href;
+const backgroundMusicPath = new URL('../../assets/audio/Genshin Impact Main Theme.mp3', import.meta.url).href;
 
 function Header() {
   const { user, logout } = useAuth();

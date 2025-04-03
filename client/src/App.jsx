@@ -9,14 +9,14 @@ import SignUp from './pages/SignUp';
 import UserProfile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import Header from './components/Layout/Header';
-import Footer from './components/Layout/Footer';
+import Header from './components/Shared/Header';
+import Footer from './components/Shared/Footer';
 import Home from './pages/Home';
 import EmailVerify from './pages/EmailVerify';
 import ResetPassword from './pages/ResetPassword';
-import SparkleCursor from './components/Layout/SparkleCursor';
+import SparkleCursor from './components/Shared/SparkleCursor';
 // Assets
-import bg from './assets/background.jpg';
+import bg from './assets/images/background.jpg';
 // Store
 
 export default function App() {

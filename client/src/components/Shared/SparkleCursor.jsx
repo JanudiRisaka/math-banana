@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Lottie from 'lottie-react';
-import SparklesAnimation from '../../assets/Sparkles.json';
+import SparklesAnimation from '../../assets/animations/Sparkles.json';
 
 const SparkleCursor = () => {
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
