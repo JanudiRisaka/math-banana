@@ -48,12 +48,6 @@ const formatDateTime = (dateString) => {
           label="Last Played"
           value={formatDateTime(safeStats.lastPlayed)}
         />
-
-        <ActivityItem
-          icon={<div className="w-6 h-6 text-center text-orange-400 font-bold">🔥</div>}
-          label="Daily Streak"
-          value={`${safeStats.dailyStreak} days`}
-        />
       </div>
     </div>
   );

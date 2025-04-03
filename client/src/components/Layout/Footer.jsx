@@ -11,7 +11,7 @@ function Footer() {
 
                 <div className="flex space-x-4 items-center">
                     <a
-                        href="https://www.linkedin.com/in/your-linkedin"
+                        href="https://lk.linkedin.com/in/janudi-risaka-141223349"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-white hover:text-yellow-400 transition-colors duration-300"
@@ -21,7 +21,7 @@ function Footer() {
                     </a>
 
                     <a
-                        href="https://github.com/your-github"
+                        href="https://github.com/JanudiRisaka"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-white hover:text-yellow-400 transition-colors duration-300"

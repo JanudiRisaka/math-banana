@@ -36,11 +36,12 @@ const ProfileStats = ({ stats }) => {
   value={formatNumber(mergedStats.wins)}
 />
 
-      <StatCard
-        icon={<Flame className="w-8 h-8 text-orange-400" />}
-        label="Daily Streak"
-        value={`${formatNumber(mergedStats.dailyStreak)} days`}
-      />
+<StatCard
+  icon={<Flame className="w-8 h-8 text-orange-400" />}
+  label="Daily Streak"
+  value={`${formatNumber(mergedStats.dailyStreak)} day${mergedStats.dailyStreak !== 1 ? 's' : ''}`}
+  tooltip="Days in a row you've played"
+/>
     </div>
   );
 };

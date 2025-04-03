@@ -185,7 +185,7 @@ export function AuthProvider({ children }) {
 
         // Get user data after successful authentication
         const userData = await fetchUserData();
-
+        // Remove this line: navigate('/'); - it's undefined here
         return { success: true, user: userData };
       } catch (err) {
         setError(err.message);

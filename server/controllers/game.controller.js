@@ -2,14 +2,115 @@ import Game from '../models/game.model.js';
 import mongoose from 'mongoose';
 
 const isConsecutiveDay = (date1, date2) => {
-  const oneDay = 24 * 60 * 60 * 1000;
-  const d1 = new Date(date1).setHours(0, 0, 0, 0);
-  const d2 = new Date(date2).setHours(0, 0, 0, 0);
-  return Math.abs(d1 - d2) <= oneDay;
+  // Convert both dates to YYYY-MM-DD format for string comparison
+  const formatDate = (date) => {
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
+  };
+
+  const d1 = formatDate(date1);
+  const d2 = formatDate(date2);
+
+  // If they're the same day, they are not consecutive
+  if (d1 === d2) return false;
+
+  // Create date objects from the formatted strings to ensure midnight comparison
+  const date1Obj = new Date(d1);
+  const date2Obj = new Date(d2);
+
+  // Calculate difference in days
+  const diffTime = Math.abs(date2Obj - date1Obj);
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  // Return true only if exactly 1 day difference
+  return diffDays === 1;
 };
 
+export const createGameData = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const userId = req.user.userId;
+    const { score, playedDate } = req.body;
+    const won = score >= 100;
 
-// 1. Add getUserStats controller to handle /api/game/stats endpoint
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      await session.abortTransaction();
+      return res.status(401).json({ success: false, message: 'Invalid user ID' });
+    }
+
+    const existing = await Game.findOne({ user: userId }).session(session);
+
+    // Get today's date and last played date in consistent format
+    const today = playedDate ? new Date(playedDate) : new Date();
+    const todayString = today.toISOString().split('T')[0];
+
+    let dailyStreak = 1; // Default for new players
+
+    if (existing?.lastPlayed) {
+      const lastPlayed = new Date(existing.lastPlayed);
+      const lastPlayedString = lastPlayed.toISOString().split('T')[0];
+
+      // Check if this is the same day
+      if (todayString === lastPlayedString) {
+        // Same day, keep current streak
+        dailyStreak = existing.dailyStreak;
+      } else if (isConsecutiveDay(lastPlayed, today)) {
+        // New day and consecutive, increment streak
+        dailyStreak = existing.dailyStreak + 1;
+      } else {
+        // Not consecutive, reset streak
+        dailyStreak = 1;
+      }
+    }
+
+    const update = {
+      $set: {
+        highScore: Math.max(existing?.highScore || 0, score),
+        lastPlayed: today,
+        dailyStreak: dailyStreak,
+        lastGameScore: score,
+      },
+      $inc: {
+        gamesPlayed: 1,
+        wins: won ? 1 : 0,
+        totalScore: score
+      }
+    };
+
+    // Best streak logic
+    if (!existing?.bestStreak || dailyStreak > existing.bestStreak) {
+      update.$set.bestStreak = dailyStreak;
+    }
+
+    const result = await Game.findOneAndUpdate(
+      { user: userId },
+      update,
+      { new: true, upsert: true, session }
+    );
+
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        dailyStreak: result.dailyStreak,
+        highScore: result.highScore,
+        lastPlayedDate: result.lastPlayed,
+        lastGameScore: result.lastGameScore,
+        wins: result.wins
+      }
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Save score error:', error);
+    res.status(500).json({ success: false, message: 'Failed to save score' });
+  } finally {
+    session.endSession();
+  }
+};
+
 export const getUserStats = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -47,91 +148,6 @@ export const getUserStats = async (req, res) => {
   } catch (error) {
     console.error('Get user stats error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user stats' });
-  }
-};
-
-export const createGameData  = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const userId = req.user.userId;
-    const { score, playedDate } = req.body; // Remove 'won' from destructuring
-    const won = score > 100; // Automatically determine win status
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      await session.abortTransaction();
-      return res.status(401).json({ success: false, message: 'Invalid user ID' });
-    }
-
-    const existing = await Game.findOne({ user: userId }).session(session);
-
-    // Calculate streak (existing code remains the same)
-    let dailyStreak = 1;
-    let incrementBestStreak = false;
-
-    if (existing?.lastPlayed) {
-      const today = playedDate ? new Date(playedDate) : new Date();
-      const lastPlayed = new Date(existing.lastPlayed);
-
-      const lastPlayedLocal = new Date(lastPlayed.toLocaleDateString());
-      const todayLocal = new Date(today.toLocaleDateString());
-
-      if (isConsecutiveDay(lastPlayedLocal, todayLocal)) {
-        dailyStreak = existing.dailyStreak + 1;
-      } else {
-        dailyStreak = 1;
-      }
-    }
-
-    // Update the win condition in the update object
-    const update = {
-      $set: {
-        highScore: Math.max(existing?.highScore || 0, score),
-        lastPlayed: playedDate ? new Date(playedDate) : new Date(),
-        dailyStreak: dailyStreak,
-        lastGameScore: score,
-      },
-      $inc: {
-        gamesPlayed: 1,
-        wins: won ? 1 : 0, // Simplified win increment
-        totalScore: score
-      }
-    };
-
-    // Best streak logic remains the same
-    if (incrementBestStreak) {
-      const currentBestStreak = existing?.bestStreak || 0;
-      if (dailyStreak > currentBestStreak) {
-        update.$set.bestStreak = dailyStreak;
-      }
-    } else if (!existing?.bestStreak) {
-      update.$set.bestStreak = 1;
-    }
-
-    const result = await Game.findOneAndUpdate(
-      { user: userId },
-      update,
-      { new: true, upsert: true, session }
-    );
-
-    await session.commitTransaction();
-
-    res.status(200).json({
-      success: true,
-      data: {
-        dailyStreak: result.dailyStreak,
-        highScore: result.highScore,
-        lastPlayedDate: result.lastPlayed,
-        lastGameScore: result.lastGameScore,
-        wins: result.wins // Include wins in response
-      }
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    console.error('Save score error:', error);
-    res.status(500).json({ success: false, message: 'Failed to save score' });
-  } finally {
-    session.endSession();
   }
 };
 

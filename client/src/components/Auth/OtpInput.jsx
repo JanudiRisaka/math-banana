@@ -73,8 +73,8 @@ const OtpInput = ({ value, onChange, error }) => {
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={handlePaste}
               className={`w-14 h-14 text-center text-2xl font-bold rounded-lg border-2 bg-white/5
-                ${error ? 'border-red-500' : 'border-white/20 focus:border-green-400'}
-                text-white focus:outline-none focus:ring-2 focus:ring-green-400/30 transition-all`}
+                ${error ? 'border-red-500' : 'border-white/20 '}
+                text-white focus:outline-none focus:ring-2 transition-all`}
             />
           </motion.div>
         ))}

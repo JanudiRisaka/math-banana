@@ -20,7 +20,7 @@ function Header() {
   // Reset avatar error state when user changes and force component update
   useEffect(() => {
     setAvatarError(false);
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   const handleShare = () => {
     if (navigator.share) {

@@ -199,34 +199,69 @@ export const updateUserDetails = async (req, res) => {
   }
 };
 
-// Delete user
+// Delete user and associated game data
 export const deleteUser = async (req, res) => {
   try {
-    const userId = req.user.userId; // Fixed from req.userId
-    const deletedUser = await User.findByIdAndDelete(userId);
+    const userId = req.user.userId;
 
-    if (!deletedUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
+    // Start a session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Delete all games associated with this user
+      const gameDeleteResult = await Game.deleteMany(
+        { user: userId },
+        { session }
+      );
+
+      // 2. Delete the user
+      const deletedUser = await User.findByIdAndDelete(
+        userId,
+        { session }
+      );
+
+      if (!deletedUser) {
+        // Abort transaction if user not found
+        await session.abortTransaction();
+        session.endSession();
+
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // If everything successful, commit transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      // Clear authentication cookie
+      res.clearCookie("jwt", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
       });
+
+      res.status(200).json({
+        success: true,
+        message: 'Account and all game data deleted successfully',
+        deletedGames: gameDeleteResult.deletedCount
+      });
+
+    } catch (error) {
+      // If any operation fails, abort transaction
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
     }
 
-    res.clearCookie("jwt", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Account deleted successfully'
-    });
   } catch (error) {
     console.error('Deletion error:', error);
     res.status(500).json({
       success: false,
-      message: 'Account deletion failed'
+      message: 'Account deletion failed',
+      error: error.message
     });
   }
 };

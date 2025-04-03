@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import axios from 'axios'; // Make sure to install axios if you haven't already
+import { useAuth } from '../context/AuthContext';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -18,6 +18,7 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signin } = useAuth();
 
   const handleLogoClick = () => {
     navigate('/');
@@ -32,19 +33,12 @@ export default function SignIn() {
       // Validate with Zod
       signInSchema.parse({ email, password });
 
-      // Connect to your backend API
-      const response = await axios.post('/api/auth/signin', {
-        email,
-        password
-      });
+      // Use the auth context's signin function
+      const result = await signin(email, password);
 
-      if (response.data?.success) {
+      if (result.success) {
         toast.success('Signed in successfully!');
-        navigate('/dashboard');
-      } else {
-        // Handle unsuccessful login
-        setError(response.data?.message || 'Sign in failed');
-        toast.error(response.data?.message || 'Sign in failed');
+        navigate('/');
       }
 
     } catch (err) {
@@ -52,7 +46,6 @@ export default function SignIn() {
       if (err instanceof z.ZodError) {
         errorMessage = err.errors[0].message;
       } else if (err.response) {
-        // Handle axios error responses
         errorMessage = err.response.data?.message || 'Sign in failed';
       }
       setError(errorMessage);
@@ -147,7 +140,7 @@ export default function SignIn() {
 
             <div className="flex items-center justify-between">
               <Link
-                to="/forgot-password"
+                to="/reset-password"
                 className="text-sm text-yellow-400 hover:text-yellow-300"
               >
                 Forgot password?

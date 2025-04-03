@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, RotateCcw, Home, Flame, Star } from 'lucide-react';
+import { Trophy, RotateCcw, Home, Flame, Star, Check, X } from 'lucide-react';
 import { Button } from '../Layout/Button';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
@@ -9,33 +9,48 @@ const GameOver = ({ score, onRestart }) => {
   const navigate = useNavigate();
   const { highScore, dailyStreak } = useGame();
 
+  // Determine if the player won based on score
+  const hasWon = useMemo(() => score >= 100, [score]);
+
   const handleNavigation = (path) => {
     navigate(path);
   };
+
+  // Dynamic content based on win/loss
+  const titleText = hasWon ? "Victory!" : "Game Over";
+  const messageText = hasWon ? "Well done, adventurer!" : "Better luck next time!";
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-8 text-center"
+        className={`backdrop-blur-md rounded-lg border p-8 text-center ${
+          hasWon ? "bg-green-900/10 border-green-500/30" : "bg-white/5 border-white/10"
+        }`}
       >
         <motion.div
           initial={{ y: -20 }}
           animate={{ y: 0 }}
           className="flex justify-center mb-6"
         >
-          <Trophy className="w-16 h-16 text-yellow-400" />
+          {hasWon ? (
+            <Trophy className="w-16 h-16 text-yellow-400" />
+          ) : (
+            <X className="w-16 h-16 text-red-400" />
+          )}
         </motion.div>
 
-        <h2 className="text-4xl font-bold text-white mb-2 font-serif">Game Over!</h2>
-        <p className="text-gray-300 mb-4">Well played, adventurer!</p>
+        <h2 className="text-4xl font-bold text-white mb-2 font-serif">{titleText}</h2>
+        <p className="text-gray-300 mb-4">{messageText}</p>
 
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-6xl font-bold text-yellow-400 mb-8"
+          className={`text-6xl font-bold mb-8 ${
+            hasWon ? "text-yellow-400" : "text-white"
+          }`}
         >
           {score.toLocaleString()}
         </motion.div>
@@ -54,6 +69,25 @@ const GameOver = ({ score, onRestart }) => {
               <h3 className="text-sm text-gray-300">All-Time Best</h3>
             </div>
             <div className="text-2xl font-bold text-purple-400">{highScore.toLocaleString()}</div>
+          </div>
+        </div>
+
+        {/* Add status indicator for win/loss */}
+        <div className="mb-6 flex items-center justify-center">
+          <div className={`flex items-center px-4 py-2 rounded-full ${
+            hasWon ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
+          }`}>
+            {hasWon ? (
+              <>
+                <Check className="w-5 h-5 mr-2" />
+                <span>Win!</span>
+              </>
+            ) : (
+              <>
+                <X className="w-5 h-5 mr-2" />
+                <span>Try to score at least 100 points to win</span>
+              </>
+            )}
           </div>
         </div>
 

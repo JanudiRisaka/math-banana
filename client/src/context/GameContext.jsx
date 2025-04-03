@@ -66,12 +66,18 @@ export function GameProvider({ children }) {
     }
   }, [isAuthenticated, fetchUserStats]);
 
-  const resetGame = useCallback(() => {
-    setScore(0);
-    setLives(3);
-    setIsGameOver(false);
-    setError(null);
-  }, []);
+// Add to your resetGame function
+const resetGame = useCallback(() => {
+  setScore(0);
+  setLives(3);
+  setIsGameOver(false);
+  setError(null);
+
+  // Refresh user stats if authenticated
+  if (isAuthenticated) {
+    fetchUserStats();
+  }
+}, [isAuthenticated, fetchUserStats]);
 
   const saveScore = useCallback(async (finalScore, won) => {
     if (!isAuthenticated) {
@@ -83,13 +89,8 @@ export function GameProvider({ children }) {
       // Include the current date in the request to help the server calculate streaks
       const today = new Date();
 
-      const localDateString = new Date(today.getTime() - (today.getTimezoneOffset() * 60000))
-      .toISOString()
-      .split('T')[0];
-
       const { data } = await api.post('/api/game/scores', {
         score: finalScore,
-        won,
         playedDate: today
       });
 
@@ -98,6 +99,7 @@ export function GameProvider({ children }) {
         setHighScore(data.data.highScore);
         setDailyStreak(data.data.dailyStreak);
         setLastPlayedDate(today);
+        setLastGameScore(finalScore);
         return data.data;
       } else {
         throw new Error(data.message || 'Failed to save score');

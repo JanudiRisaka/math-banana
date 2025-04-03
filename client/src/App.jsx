@@ -48,16 +48,19 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }/>
             <Route path="/signup" element={<SignUp />} />
             <Route
-  path="/game"
-  element={
-    <ProtectedRoute>
-      <Game />
-    </ProtectedRoute>
-  }
-/>
-Add User Data Loading State:
+              path="/game" element={
+                <ProtectedRoute>
+                  <Game />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/help" element={<Help />} />
             <Route path="/verify-email" element={<EmailVerify />} />
             <Route path="/reset-password" element={<ResetPassword />} />

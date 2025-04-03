@@ -160,7 +160,7 @@ export const sendVerifyOtp = async (req, res) => {
 		const otp = String(Math.floor(100000 + Math.random() * 900000));
 
 		user.verifyOtp = otp;
-		user.verifyOtpExpireAt = Date.now() + 3 * 60 * 1000; // 3 minutes
+		user.verifyOtpExpireAt = Date.now() + 5 * 60 * 1000; // 3 minutes
 
 		await user.save();
 
@@ -282,7 +282,7 @@ export const sendResetOtp = async (req, res) => {
 		const otp = String(Math.floor(100000 + Math.random() * 900000));
 
 		user.resetOtp = otp;
-		user.resetOtpExpiredAt = Date.now() + 15 * 60 * 1000;
+		user.resetOtpExpiredAt = Date.now() + 5 * 60 * 1000;
 
 		await user.save();
 
