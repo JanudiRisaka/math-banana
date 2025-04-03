@@ -1,4 +1,4 @@
-// src/main.jsx
+// Serves as the entry point for the React application, setting up rendering and context providers.
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';

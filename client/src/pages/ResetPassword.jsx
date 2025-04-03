@@ -1,3 +1,5 @@
+/* Defines the page for handling the password reset process,
+including OTP verification and setting a new password.*/
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X } from "lucide-react";

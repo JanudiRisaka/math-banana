@@ -1,9 +1,17 @@
+// src/components/DifficultySelect.jsx
+/**
+ * Difficulty Selection Component - Allows players to choose game difficulty
+ * Demonstrates software design principles:
+ * - High Cohesion: Focused solely on difficulty selection UI/UX
+ * - Low Coupling: Communicates via callback prop (onSelect)
+ */
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Zap, Flame } from 'lucide-react';
 import { Button } from '../Layout/Button';
 
 const DifficultySelect = ({ onSelect }) => {
+  // Difficulty configuration demonstrates data-driven design
   const difficulties = [
     {
       level: 'low',

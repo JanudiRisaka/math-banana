@@ -1,8 +1,8 @@
+
 import Game from '../models/game.model.js';
 import mongoose from 'mongoose';
 
 const isConsecutiveDay = (date1, date2) => {
-  // Convert both dates to YYYY-MM-DD format for string comparison
   const formatDate = (date) => {
     const d = new Date(date);
     return d.toISOString().split('T')[0];

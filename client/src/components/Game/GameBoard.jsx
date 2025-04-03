@@ -1,3 +1,11 @@
+// src/components/GameBoard.jsx
+/**
+ * Core Game Component - Manages game logic and UI
+ * Demonstrates:
+ * - Event-driven architecture (timers, user input)
+ * - Interoperability with Banana API
+ * - Virtual identity integration via AuthContext
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Timer, Trophy } from 'lucide-react';
@@ -12,6 +20,7 @@ const DIFFICULTY_SETTINGS = {
 };
 
 const GameBoard = ({ difficulty, onGameOver }) => {
+  // Context usage demonstrates low coupling
   const {
     score,
     setScore,
@@ -25,6 +34,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   // Use the AuthContext
   const { isAuthenticated, user } = useAuth();
 
+  // Game state management
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [timeLeft, setTimeLeft] = useState(DIFFICULTY_SETTINGS[difficulty].time);
   const [answer, setAnswer] = useState('');
@@ -33,6 +43,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   const timerRef = useRef(null);
   const mounted = useRef(true);
 
+  // Event: Fetch questions from Banana API
   const fetchNewQuestion = useCallback(async () => {
     if (!mounted.current) return;
     try {
@@ -94,6 +105,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     return () => clearInterval(timerRef.current);
   }, [difficulty]);
 
+   // Event: Handle answer submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 

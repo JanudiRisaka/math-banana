@@ -1,3 +1,4 @@
+// Provides a component to catch JavaScript errors anywhere in its child component tree.
 import { Component } from 'react';
 
 class ErrorBoundary extends Component {

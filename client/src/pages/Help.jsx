@@ -1,3 +1,4 @@
+// Displays the game rules, instructions, difficulty level details, and tips.
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';

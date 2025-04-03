@@ -58,7 +58,6 @@ export const signup = async (req, res) => {
 	});
 
 	await user.save();
-	console.log('User created:', user.email);
 	res.status(201).json({
 		success: true,
 		message: 'Registration successful. Please verify your email.',
@@ -116,7 +115,6 @@ export const signin = async (req, res) => {
 		res.json({success: true});
 
 	} catch (error) {
-		console.log("Error in signup ", error);
 		res.status(400).json({ success: false, message: error.message });
 	}
 };

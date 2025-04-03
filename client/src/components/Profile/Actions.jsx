@@ -1,3 +1,10 @@
+// src/components/Profile/Actions.jsx
+/**
+ * Profile Actions Component
+ * - Demonstrates Event-Driven Architecture through click handlers
+ * - Shows Virtual Identity management with account deletion/update
+ * - Maintains Low Coupling via prop callbacks
+ */
 import React from 'react';
 import { Button } from '../Layout/Button';
 

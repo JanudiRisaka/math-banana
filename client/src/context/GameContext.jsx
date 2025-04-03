@@ -1,11 +1,12 @@
+// Manages global game state including score, lives, high score, streak, and provides game-related actions.
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from './AuthContext'; // Import AuthContext
+import { useAuth } from './AuthContext';
 
 const GameContext = createContext();
 
 export function GameProvider({ children }) {
-  const { isAuthenticated } = useAuth(); // Use AuthContext
+  const { isAuthenticated } = useAuth();
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -21,16 +22,13 @@ export function GameProvider({ children }) {
   // Axios instance with base configuration
   const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
-    withCredentials: true // This is important for cookie authentication
+    withCredentials: true
   });
 
-  // No need for token-based interceptor since we're using cookie auth
-  // But we'll keep the response interceptor for error handling
   api.interceptors.response.use(
     response => response,
     error => {
       if (error.response?.status === 401) {
-        // Redirect to login on 401 responses
         window.location.href = '/signin';
       }
       return Promise.reject(error);

@@ -1,3 +1,4 @@
+// Displays key game statistics for the user on their profile page.
 import React from 'react';
 import { Trophy, Gamepad, Calendar, Award, Flame } from 'lucide-react';
 

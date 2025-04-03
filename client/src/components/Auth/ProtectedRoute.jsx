@@ -1,3 +1,9 @@
+// src/components/ProtectedRoute.jsx
+/**
+ * Protected Route Component - Guards authenticated routes
+ * Demonstrates virtual identity management through auth checks
+ * Implements interoperability with session storage for game state
+ */
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +13,7 @@ const ProtectedRoute = ({ children }) => {
   const { user, isAuthenticated, isLoading, refreshUserData } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
 
+   // Authentication verification flow
   useEffect(() => {
     const verifyAuth = async () => {
       if (!isLoading && !isAuthenticated) {

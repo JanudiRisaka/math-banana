@@ -1,6 +1,13 @@
+// src/components/PasswordStrengthMeter.jsx
+// Inspired by: https://youtu.be/pmvEgZC55Cg?si=TNrrb-SBbiBt1cq5
+// Enhanced with strength meter visualization and accessibility features
 import { Check, X } from "lucide-react";
 import { useMemo } from 'react';
 
+/**
+ * Password Criteria Component - Shows validation requirements
+ * Demonstrates component cohesion through focused responsibility
+ */
 const PasswordCriteria = ({ password }) => {
   const criteria = useMemo(() => [
     { label: "8+ characters", met: password.length >= 8 },
@@ -28,6 +35,10 @@ const PasswordCriteria = ({ password }) => {
   );
 };
 
+/**
+ * Password Strength Meter - Calculates and displays password complexity
+ * Demonstrates event-driven updates through password prop changes
+ */
 const PasswordStrengthMeter = ({ password }) => {
   const { strength, strengthText, strengthColor } = useMemo(() => {
     let strength = 0;
@@ -37,6 +48,7 @@ const PasswordStrengthMeter = ({ password }) => {
     const hasNumber = /\d/.test(password);
     const hasSpecialChar = /[@$!%*?&]/.test(password);
 
+        // Security requirements for virtual identity protection
     if (hasMinLength) strength++;
     if (hasUpperCase) strength++;
     if (hasLowerCase) strength++;

@@ -1,3 +1,4 @@
+//Provides a custom React hook to manage audio playback, including muting and handling browser restrictions.
 import { useState, useEffect, useRef } from 'react';
 
 export const useAudio = (url, initialMuted = true) => {
@@ -61,7 +62,6 @@ export const useAudio = (url, initialMuted = true) => {
             // Playback started successfully
           })
           .catch(error => {
-            console.log('Playback prevented:', error);
             // Don't show errors to users in production
             if (process.env.NODE_ENV !== 'production') {
               console.warn('Audio playback failed:', error);

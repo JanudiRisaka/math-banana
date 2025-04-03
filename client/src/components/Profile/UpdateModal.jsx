@@ -1,3 +1,4 @@
+// Provides a modal interface for updating user profile details like username and avatar
 import React, { useState } from 'react';
 import { Button } from '../Layout/Button';
 import { ArrowLeft, Sparkles } from 'lucide-react';

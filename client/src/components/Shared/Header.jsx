@@ -1,10 +1,13 @@
+// Header Component
+// This file defines the header section, including navigation, user authentication, and audio control.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Volume2, VolumeX, Trophy, User, Info, Share2, Sparkles } from 'lucide-react';
-import { Button } from '../Layout/Button.jsx';
+import { Button } from '../Layout/';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAudio } from '../../hooks/useAudio.js';
+// Background music file
 const backgroundMusicPath = new URL('../../assets/audio/Genshin Impact Main Theme.mp3', import.meta.url).href;
 
 function Header() {
@@ -12,16 +15,17 @@ function Header() {
   const isAuthenticated = !!user;
   const navigate = useNavigate();
 
-
   // Local state for managing audio mute status
   const [isMuted, setIsMuted] = useState(false);
   const [audioMuted, audioToggleMute] = useAudio(backgroundMusicPath, isMuted);
   const [avatarError, setAvatarError] = useState(false);
-  // Reset avatar error state when user changes and force component update
+
+ // Reset avatar error state when user changes
   useEffect(() => {
     setAvatarError(false);
   }, [user, isAuthenticated]);
 
+   // Function to handle sharing the game link
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -35,15 +39,18 @@ function Header() {
     }
   };
 
+   // Navigate to the home page when clicking the logo
   const handleLogoClick = () => {
     navigate('/');
   };
 
+   // Toggle audio mute status
   const handleToggleMute = () => {
     setIsMuted(!isMuted);
     audioToggleMute();
   };
 
+   // Render user avatar or fallback options
   const renderUserAvatar = () => {
     if (!user) return null;
 

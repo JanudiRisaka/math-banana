@@ -1,4 +1,4 @@
-// RecentActivity.jsx
+//Displays recent user activity information like last game score and last played time.
 import React from 'react';
 import { Clock, Award } from 'lucide-react';
 

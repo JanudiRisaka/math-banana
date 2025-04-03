@@ -1,6 +1,27 @@
-{
-  "ignore": ["node_modules/**/*"]
-  .env
-*.pem
-*.key
-}
+# General
+.DS_Store
+*.log
+.env
+*.env.local
+*.env.*.local
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+
+# Client (Vite)
+client/.env
+client/dist
+client/node_modules
+
+# Server (Node)
+server/.env
+server/node_modules
+server/logs
+server/.nyc_output
+
+# IDE
+.vscode/
+.idea/

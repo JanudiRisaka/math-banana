@@ -1,3 +1,4 @@
+// Provides a confirmation modal for deleting the user's account.
 import React from 'react';
 
 const ProfileHeader = ({ user }) => {

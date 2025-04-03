@@ -1,3 +1,5 @@
+/* Defines the page where users verify their email address using
+an OTP sent to them.*/
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';

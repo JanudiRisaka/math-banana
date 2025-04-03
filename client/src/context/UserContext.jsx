@@ -1,3 +1,4 @@
+// Manages global user profile state and statistics, providing functions to fetch and update user data.
 import { createContext, useContext, useState } from 'react';
 import axios from 'axios';
 

@@ -1,3 +1,5 @@
+/* Manages the overall game flow, switching between difficulty selection,
+   active gameplay, and game over screens. */
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DifficultySelect from '../components/Game/DifficultySelect';

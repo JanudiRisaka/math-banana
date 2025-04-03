@@ -1,3 +1,4 @@
+// Provides a confirmation modal for deleting the user's account.
 import React, { useState } from 'react';
 import { Button } from '../Layout/Button';
 import { motion } from 'framer-motion';

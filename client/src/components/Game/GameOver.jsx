@@ -1,3 +1,8 @@
+// src/components/GameOver.jsx
+/**
+ * Game Over Screen - Displays final results and options
+ * Demonstrates component cohesion through focused responsibility
+ */
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, RotateCcw, Home, Flame, Star, Check, X } from 'lucide-react';
@@ -6,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
 
 const GameOver = ({ score, onRestart }) => {
+  // Context usage for state management
   const navigate = useNavigate();
   const { highScore, dailyStreak } = useGame();
 

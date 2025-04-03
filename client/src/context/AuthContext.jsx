@@ -1,3 +1,6 @@
+// This file defines the Authentication Context for the React application.
+// It manages user authentication state (like user data, loading status, errors),
+// handles interactions with the backend authentication API endpoints (signup, signin, logout, OTP verification, etc.),
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -237,7 +240,6 @@ export function AuthProvider({ children }) {
           credentials: 'include'
         });
         const data = await response.json();
-        console.log('Verify-email API response:', data);
 
         if (!response.ok) {
           throw new Error(data.message || 'Verification failed');

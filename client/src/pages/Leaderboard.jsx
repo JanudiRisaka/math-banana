@@ -1,4 +1,5 @@
-// Leaderboard.jsx
+/* Displays the game leaderboard, fetching and showing player rankings
+   based on high scores.*/
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Crown, Medal, Clock } from 'lucide-react';

@@ -1,12 +1,19 @@
 // src/components/OtpInput.jsx
+// Adapted from: https://youtu.be/7BTsepZ9xp8?si=m817c_k8DdJrgxAH
+// Enhanced with error handling and animation features
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
+/**
+ * OTP Input Component - Handles 6-digit verification codes with auto-focus and paste support
+ * Demonstrates event-driven architecture through keyboard/paste handlers
+ */
 const OtpInput = ({ value, onChange, error }) => {
+  // Refs for input focus management
   const inputRefs = useRef(Array(6).fill(null));
   const otpDigits = value.split('');
 
-  // Handle paste from clipboard
+  // Event: Handle clipboard paste
   const handlePaste = (e) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData('text/plain').replace(/\D/g, '').slice(0, 6);
@@ -15,7 +22,7 @@ const OtpInput = ({ value, onChange, error }) => {
     }
   };
 
-  // Handle digit change
+// Event: Handle individual digit input
   const handleChange = (index, newValue) => {
     if (newValue === '') return;
 
@@ -32,7 +39,7 @@ const OtpInput = ({ value, onChange, error }) => {
     }
   };
 
-  // Handle keyboard navigation
+  // Event: Handle keyboard navigation
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
       inputRefs.current[index - 1].focus();

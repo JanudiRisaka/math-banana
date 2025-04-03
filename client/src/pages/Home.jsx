@@ -1,3 +1,5 @@
+/* Defines the application's home page, featuring a welcome message and a
+    call to action to start the game. */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';

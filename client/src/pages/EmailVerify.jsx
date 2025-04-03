@@ -1,3 +1,4 @@
+// Defines the page where users verify their email address using an OTP sent to them.
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -55,10 +56,8 @@ const EmailVerify = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log('Attempting verification for:', email, 'OTP:', otp);
 
       const data = await verifyEmail(email, otp);
-      console.log('Verification response:', data);
 
       if (data.success) {
         toast.success('Email verified successfully!');

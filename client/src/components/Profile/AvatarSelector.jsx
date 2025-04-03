@@ -1,7 +1,15 @@
+// src/components/Profile/AvatarSelector.jsx
+/**
+ * Avatar Selector Component
+ * - Demonstrates Interoperability with DiceBear API
+ * - Implements Event-Driven flow for avatar generation
+ * - Maintains Virtual Identity through avatar persistence
+ */
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Layout/Button';
 
 const AvatarSelector = ({ user, onSave, onCancel }) => {
+  // State management for avatar customization
   const [selectedStyle, setSelectedStyle] = useState('lorelei');
   const [seed, setSeed] = useState(user?.username || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || '');
@@ -18,7 +26,7 @@ const AvatarSelector = ({ user, onSave, onCancel }) => {
     { value: 'initials', label: 'Initials' }
   ];
 
-  // Generate avatar URL with a random query parameter to force refresh when seed or style changes
+  // Event: Generate new avatar URL when settings change
   const generateAvatar = () => {
     try {
       const trimmedSeed = seed.trim() || 'anonymous';
@@ -39,6 +47,7 @@ const AvatarSelector = ({ user, onSave, onCancel }) => {
     }
   };
 
+  // Event: Save handler with validation
   const handleSave = async () => {
     if (!validateUrl(avatarUrl)) {
       setError('Invalid avatar URL format. Please refresh.');

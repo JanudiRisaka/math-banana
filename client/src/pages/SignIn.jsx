@@ -1,3 +1,4 @@
+// Defines the user sign-in page with email and password fields.
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';

@@ -1,3 +1,10 @@
+// src/components/Layout/Button.jsx
+/**
+ * Reusable Button Component with Variants
+ * - Demonstrates High Cohesion by encapsulating all button styles
+ * - Shows Low Coupling through variant props instead of direct CSS
+ * - Uses class-variance-authority for maintainable styling variants
+ */
 import { cva } from 'class-variance-authority';
 import { twMerge } from 'tailwind-merge';
 

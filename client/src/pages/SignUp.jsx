@@ -1,4 +1,4 @@
-  //pages/SignUp.jsx
+/* Defines the user registration page with fields for username, email, and password.*/
   import React, { useState } from 'react';
   import { motion } from 'framer-motion';
   import { Sparkles, ArrowLeft, Mail, Lock, User, Loader2 } from 'lucide-react';
@@ -62,17 +62,11 @@ const handleSubmit = async (e) => {
     if (!acceptedTerms) {
       throw new Error('You must accept the privacy policy');
     }
-    console.log('Attempting signup with:', credentials);
     // Execute signup and wait for response
     const response = await signup(credentials);
     if (!response.success) {
       throw new Error(response.message || 'Signup failed');
     }
-    console.log('Signup response:', response);
-    console.log('Navigating to verify-email with state:', {
-      email: formData.email,
-      fromSignUp: true
-    });
     // Navigate immediately after successful signup
     navigate('/verify-email', {
       state: { email: formData.email, fromSignUp: true }
