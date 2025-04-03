@@ -1,4 +1,4 @@
-
+// This file manages user profile operations, including fetching, updating, and deleting user data.
 import User from '../models/user.model.js';
 import Game from '../models/game.model.js';
 import bcrypt from 'bcryptjs';
@@ -7,9 +7,11 @@ import mongoose from 'mongoose';
 
 dotenv.config();
 
+// Helper function to generate a DiceBear avatar URL based on username
 const generateAvatar = (username) =>
   `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(username)}`;
 
+// Fetch user details and associated game stats
 export const getUserDetails = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.userId;
@@ -32,6 +34,7 @@ export const getUserDetails = async (req, res) => {
       });
     }
 
+     // Default game statistics for new users
     let gameStats = {
       highScore: 0,
       gamesPlayed: 0,
@@ -91,6 +94,7 @@ export const getUserDetails = async (req, res) => {
   }
 };
 
+// Get authenticated user data (excluding sensitive fields)
 export const getUserData = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId)
@@ -244,7 +248,13 @@ export const deleteUser = async (req, res) => {
         sameSite: 'strict'
       });
 
-      res.status(200).json({
+      res.status(200)
+      .clearCookie("jwt", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      })
+      .json({
         success: true,
         message: 'Account and all game data deleted successfully',
         deletedGames: gameDeleteResult.deletedCount

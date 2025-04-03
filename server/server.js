@@ -1,3 +1,6 @@
+// server.js
+// This is the main server file that sets up the Express application, middleware, and API routes.
+// It also includes security, logging, static asset handling, and error management.
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
@@ -8,11 +11,12 @@ import connectDB from './config/mongodb.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Routes
+// Import route files
 import authRouter from './routes/auth.route.js';
 import userRouter from './routes/user.route.js';
 import gameRouter from './routes/game.route.js';
 
+// Set __filename and __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,7 +26,7 @@ const PORT = process.env.PORT || 5000;
 // Database connection
 connectDB();
 
-// Security middleware
+// Set security headers using helmet with custom CSP
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -35,7 +39,7 @@ app.use(helmet({
   }
 }));
 
-// CORS configuration
+// Configure CORS based on environment
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? process.env.CLIENT_URL
@@ -47,28 +51,28 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Request logging
+// Custom request logging middleware (logs method, path, and timestamp)
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// API routes (MUST COME BEFORE STATIC ASSETS)
+// API routes
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/game', gameRouter);
 
-// Health check endpoint
+// Health check endpoint for monitoring server status
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Static assets (production only)
+// Serve static assets for production (client build)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 }
 
-// Security headers middleware
+// Additional security headers middleware for extra protection
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -76,7 +80,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Missing route handler check
+// Handle missing API routes with a warning and 404 response
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     console.warn(`[WARNING] Missing API route handler for: ${req.method} ${req.path}`);
@@ -85,7 +89,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Error handling middleware
+// Global error handling middleware for catching unexpected errors
 app.use((err, req, res, next) => {
   console.error('Global error:', err);
   res.status(500).json({
@@ -95,7 +99,8 @@ app.use((err, req, res, next) => {
       : 'Internal server error'
   });
 });
-//SPA
+
+// Serve Single Page Application (SPA) fallback for non-API routes
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Not found' });
@@ -103,6 +108,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
 
+// Start the server and listen on the specified port
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

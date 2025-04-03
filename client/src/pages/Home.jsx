@@ -13,7 +13,7 @@ import bananaImage from '../assets/images/banana1.png';
 const Sparkles = ({ top, left }) => {
   return (
     <div
-      className="absolute -translate-x-90 -translate-y-20 pointer-events-none"
+      className="absolute -translate-x-10 -translate-y-20 pointer-events-none"
       style={{
         top: `${top}%`,
         left: `${left}%`,
@@ -60,10 +60,6 @@ export default function Home() {
       transition={{ delay: 0.2 }}
     >
       <div className="relative z-10 w-full max-w-7xl px-4 md:px-8">
-        <Sparkles top={20} left={10} />
-        <Sparkles top={70} left={30} />
-        <Sparkles top={40} left={85} />
-
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
           <div className="flex-1 text-center md:text-left">
             <h2 className="text-4xl md:text-6xl font-bold mb-4 font-serif">
@@ -89,6 +85,10 @@ export default function Home() {
           </div>
 
           <div className="flex-1 flex justify-center md:justify-end">
+          <Sparkles top={10} left={100} />
+          <Sparkles top={90} left={50} />
+          <Sparkles top={30} left={70} />
+          <Sparkles top={100} left={70} />
             <motion.img
               src={bananaImage}
               alt="Magical Banana"

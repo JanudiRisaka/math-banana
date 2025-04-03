@@ -1,4 +1,4 @@
-// controllers/auth.controller.js
+// This file contains functions for handling user authentication (signup, signin, logout, OTP verification, etc.)
 import User from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -14,6 +14,7 @@ export const signup = async (req, res) => {
 
 	const { username, email, password, confirmPassword } = req.body;
 
+	// Validate required fields
 	if (!username || !email || !password || !confirmPassword){
 		return res.json({
 			success: false,
@@ -21,7 +22,7 @@ export const signup = async (req, res) => {
 		})
 	}
 
-	// Check if passwords match after trimming
+ 	// Check password match
 	if (password !== confirmPassword) {
 		return res.status(400).json({
 		  success: false,
@@ -39,7 +40,7 @@ export const signup = async (req, res) => {
 	}
 
 	try {
-	// Check for existing user
+	// Check if the user already exists
 	const existingUser = await User.findOne({email});
 
 	if (existingUser) {
@@ -49,6 +50,7 @@ export const signup = async (req, res) => {
 		  });
 	}
 
+	// Hash the password and create a new user
 	const hashedPassword = await bcryptjs.hash(password, 10);
 
 	const user = new User({
@@ -58,6 +60,8 @@ export const signup = async (req, res) => {
 	});
 
 	await user.save();
+
+	// Respond with success and prompt email verification
 	res.status(201).json({
 		success: true,
 		message: 'Registration successful. Please verify your email.',
@@ -70,10 +74,12 @@ export const signup = async (req, res) => {
 	}
 };
 
+// User Signin (Login)
 export const signin = async (req, res) => {
 
 	const { email, password } = req.body;
 
+	// Validate required fields
 	if (!email || !password){
 		return res.json({
 			success: false,
@@ -82,7 +88,7 @@ export const signin = async (req, res) => {
 	}
 
 	try {
-
+		// Find the user by email
 		const user = await User.findOne({email});
 
 		if (!user) {
@@ -92,19 +98,21 @@ export const signin = async (req, res) => {
 			});
 		}
 
+		// Verify password correctness
 		const isPasswordMatch = await bcryptjs.compare(password, user.password);
 
 		if (!isPasswordMatch) {
 			return res.json({ success: false, message: "Invalid password" });
 		}
 
-	// Generate token
+	// Generate JWT token for the session
 	const token = jwt.sign(
 		{ userId: user._id },
 		process.env.JWT_SECRET,
 		{ expiresIn: '7h' }
 	);
 
+	 // Set token in a secure cookie
 	res.cookie('token', token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === 'production',
@@ -119,8 +127,10 @@ export const signin = async (req, res) => {
 	}
 };
 
+// User Logout
 export const logout = async (req, res) => {
 	try {
+		// Clear authentication cookie
 		res.clearCookie('token' ,  {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === 'production',
@@ -134,7 +144,7 @@ export const logout = async (req, res) => {
 	}
 };
 
-//send verification OTP to the user's email
+// Send Verification OTP to User's Email
 export const sendVerifyOtp = async (req, res) => {
 	try {
 		const { email } = req.body; // Get email from request body
@@ -155,6 +165,7 @@ export const sendVerifyOtp = async (req, res) => {
 		  });
 		}
 
+		// Generate a 6-digit OTP
 		const otp = String(Math.floor(100000 + Math.random() * 900000));
 
 		user.verifyOtp = otp;
@@ -162,6 +173,7 @@ export const sendVerifyOtp = async (req, res) => {
 
 		await user.save();
 
+		// Email options for OTP verification
 		const mailOption = {
 			from: process.env.SENDER_EMAIL,
 			to: user.email,
@@ -178,6 +190,7 @@ export const sendVerifyOtp = async (req, res) => {
 	}
 }
 
+// Verify User Email using OTP
 export const verifyEmail = async (req, res) => {
 	const { email, otp } = req.body;
 
@@ -200,13 +213,14 @@ export const verifyEmail = async (req, res) => {
 			return res.json({ success: false, message: 'OTP expired'});
 		}
 
+		// Update user status to verified and clear OTP fields
 		user.isAccountVerified = true;
 		user.verifyOtp = '';
 		user.verifyOtpExpireAt = 0;
 
 		await user.save();
 
-		// Generate token after verification
+		// Generate JWT token after successful verification
 		const token = jwt.sign(
 			{ userId: user._id },
 			process.env.JWT_SECRET,
@@ -245,12 +259,11 @@ export const verifyEmail = async (req, res) => {
 	}
 }
 
-// Add proper authentication check
+// Check if User is Authenticated (used by middleware)
 export const isAuthenticated = async (req, res) => {
 	try {
-	  // The userAuth middleware already verified the token
-	  // Return user status with basic info
-	  res.json({
+		// The userAuth middleware should already validate the token
+	  	res.json({
 		success: true,
 		user: req.user // From userAuth middleware
 	  });
@@ -260,7 +273,7 @@ export const isAuthenticated = async (req, res) => {
 		message: error.message
 	  });
 	}
-  }
+}
 
 // Send Password Reset OTP
 export const sendResetOtp = async (req, res) => {
@@ -300,7 +313,7 @@ export const sendResetOtp = async (req, res) => {
 	}
 }
 
-//Reset User Password
+// Reset User Password using OTP
 export const resetPassword = async (req, res) => {
 	const {email, otp, newPassword} = req.body;
 
@@ -323,6 +336,7 @@ export const resetPassword = async (req, res) => {
 			return res.json({ success: false, message: 'OTP expired' });
 		}
 
+		 // Hash new password and update user record
 		const hashedPassword = await bcryptjs.hash(newPassword, 10);
 
 		user.password = hashedPassword;

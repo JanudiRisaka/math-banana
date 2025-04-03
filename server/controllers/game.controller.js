@@ -1,7 +1,8 @@
-
+// This file handles game data: saving scores, updating streaks, fetching stats, and leaderboard.
 import Game from '../models/game.model.js';
 import mongoose from 'mongoose';
 
+// Helper function to check if two dates are consecutive
 const isConsecutiveDay = (date1, date2) => {
   const formatDate = (date) => {
     const d = new Date(date);
@@ -26,6 +27,7 @@ const isConsecutiveDay = (date1, date2) => {
   return diffDays === 1;
 };
 
+// Create or update game data for a user
 export const createGameData = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -111,6 +113,7 @@ export const createGameData = async (req, res) => {
   }
 };
 
+// Get user game statistics
 export const getUserStats = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -151,6 +154,7 @@ export const getUserStats = async (req, res) => {
   }
 };
 
+// Fetch top players leaderboard
 export const getLeaderboard = async (req, res) => {
   try {
     const leaderboard = await Game.aggregate([
