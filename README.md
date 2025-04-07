@@ -62,14 +62,6 @@ npm install
 VITE_API_BASE_URL=http://localhost:5000
 NODE_ENV=development
 
-### 4. Configure package.json: Add to both client/package.json and server/package.json:
-{
-  "type": "module",             //for both
-  "scripts": {
-    "dev": "vite",              // For client
-    "dev": "nodemon server.js"  // For server
-  }
-}
 ### 5. Run Application
 In separate terminals:
 # Server
