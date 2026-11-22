@@ -34,3 +34,12 @@ jobs:
         run: npm --prefix server test
       - name: Build frontend
         run: npm --prefix client run build
+      - name: Install Chromium for browser tests
+        run: npx --prefix client playwright install --with-deps chromium
+      - name: Check round completion in Chromium
+        run: |
+          VITE_API_BASE_URL=http://localhost:5173 npm --prefix client run dev -- --port 5173 --strictPort &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl --retry 15 --retry-connrefused --retry-delay 1 --fail --silent http://localhost:5173/game > /dev/null
+          node client/e2e/round.cjs
