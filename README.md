@@ -59,4 +59,4 @@ See the [architecture notes](docs/ARCHITECTURE.md) and [event examples](docs/EVE
 
 ## Checks
 
-Run `npm --prefix client run build` to check the production frontend build. With the database and email service configured, verify sign-up and email OTP, timer expiry, score persistence after refresh, and leaderboard order as a manual smoke test.
+Run `npm --prefix server test` for API smoke tests that need no database or email credentials. Run `npm --prefix client run build` to check the production frontend build. With the database and email service configured, verify sign-up and email OTP, timer expiry, score persistence after refresh, and leaderboard order as a manual smoke test.
