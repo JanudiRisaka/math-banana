@@ -1,63 +1,45 @@
-# Math Banana - Software Architecture
+# Math Banana architecture
 
-## 1. Overview
+```mermaid
+flowchart TD
+    Browser["React app in the browser"]
+    API["Express API"]
+    DB["MongoDB"]
+    Banana["Banana API"]
+    DiceBear["DiceBear"]
+    Brevo["Brevo SMTP"]
+    Browser -->|Puzzles| Banana
+    Browser -->|Avatar images| DiceBear
+    Browser -->|Accounts, profiles, scores| API
+    API -->|User and game records| DB
+    API -->|Verification and reset emails| Brevo
+```
 
-This document outlines the software architecture of the Math Banana frontend application. It's a Single Page Application (SPA) built using **React** (v19) with **Vite** as the build tool. Styling is handled primarily through **Tailwind CSS**, and client-side routing is managed by **React Router DOM**. State management leverages React's built-in **Context API** and `useState` hook.
+## How a game works
 
-The primary goals of this architecture are:
-*   **Maintainability:** Easy to understand, modify, and extend.
-*   **Reusability:** Components and logic can be reused across the application.
-*   **Scalability:** The structure can accommodate future features.
-*   **Testability:** Components and logic can be tested in isolation (though tests are not provided in the codebase).
+1. The signed-in player selects a difficulty. [GameBoard](../client/src/components/Game/GameBoard.jsx) loads a puzzle through [the Banana API client](../client/src/components/Game/fetchPuzzle.js).
+2. The timer counts down while a puzzle is available. Correct answers add points and load another puzzle. Incorrect answers cost a life. A failed puzzle request pauses play and offers a retry.
+3. When time or lives run out, [GameContext](../client/src/context/GameContext.jsx) sends the final score to Express. The [game controller](../server/controllers/game.controller.js) updates the player's game record in a MongoDB transaction. The leaderboard reads high scores from these records.
 
-## 2. Core Architectural Patterns
+## Responsibilities
 
-### 2.1. Component-Based Architecture
+| Component | Responsibility |
+| --- | --- |
+| [React routes](../client/src/App.jsx) | Map pages and apply [route guards](../client/src/components/Auth/ProtectedRoute.jsx). |
+| [AuthContext](../client/src/context/AuthContext.jsx) | Manage the signed-in session and account actions. |
+| [GameContext](../client/src/context/GameContext.jsx) | Share game state and handle score, stats, and leaderboard requests. |
+| [UserContext](../client/src/context/UserContext.jsx) | Load and update profile data. |
+| [Express app](../server/app.js) | Mount API routes and configure request middleware. [Server startup](../server/server.js) connects to MongoDB before listening. |
+| [Auth middleware](../server/middleware/userAuth.js) | Verify the JWT cookie and supply the user ID to protected handlers. |
 
-*   **Description:** The UI is broken down into reusable, independent components. These are primarily functional components utilizing React Hooks.
-*   **Implementation:**
-    *   **Pages (`src/pages/`):** Top-level components representing distinct application views (e.g., `Home`, `SignIn`, `Game`, `Profile`). They primarily orchestrate the layout and assembly of smaller components.
-    *   **Reusable UI Components (`src/components/Layout/`, `src/components/Shared/`):** General-purpose components like `Button`, `Header`, `Footer`.
-    *   **Feature-Specific Components (`src/components/Auth/`, `src/components/Game/`, `src/components/Profile/`):** Components tailored to specific features, like `OtpInput`, `DifficultySelect`, `GameBoard`, `ProfileStats`.
-*   **Cohesion:** High. Each component typically encapsulates a specific piece of UI and its associated logic (e.g., `OtpInput` handles OTP entry logic, `GameBoard` manages the game loop UI).
+## Game API
 
-### 2.2. Context API for State Management
+These endpoints expect the signed-in session cookie. Successful responses use the shape `{ success: true, data: ... }`. Clients should check the response's `success` field.
 
-*   **Description:** React's Context API is used to manage global or shared state that needs to be accessible across different parts of the component tree without prop drilling.
-*   **Implementation:** Three main contexts are defined:
-    *   **`AuthContext` (`src/context/AuthContext.jsx`):** Manages user authentication state (user object, loading status, errors), provides authentication methods (signin, signup, logout, OTP handling), and interacts with auth-related API endpoints.
-    *   **`GameContext` (`src/context/GameContext.jsx`):** Manages game state (score, lives, game over status, high score, streak), provides game-related actions (save score, reset game, fetch leaderboard), and interacts with game API endpoints.
-    *   **`UserContext` (`src/context/UserContext.jsx`):** Manages user profile data and statistics, provides methods for fetching and updating profile information, and interacts with user profile API endpoints.
-*   **Coupling:** Low. Components needing access to auth, game, or user state/actions consume the respective contexts via hooks (`useAuth`, `useGame`, `useUser`). They are decoupled from the specific implementation details of how that state is fetched or managed.
-*   **Cohesion:** High. Each context groups related state variables and the functions that operate on them, centralizing the logic for that specific domain (authentication, game mechanics, user profile).
+| Method and path | Request | Successful result |
+| --- | --- | --- |
+| `POST /api/game/scores` | JSON body with `score` and optional ISO date `playedDate` | Updated high score, daily streak, last played date, last game score, and wins. |
+| `GET /api/game/stats` | Session cookie | High score, daily streak, last played date, games played, and wins. |
+| `GET /api/game/leaderboard` | Session cookie | Up to 10 records with positive high scores, sorted highest first. Each entry includes the player's username and avatar. |
 
-### 2.3. Client-Side Routing
-
-*   **Description:** `react-router-dom` handles navigation within the SPA, mapping URL paths to specific page components without requiring full page reloads from the server.
-*   **Implementation:**
-    *   Routes are defined in `src/App.jsx` within the `<Routes>` component.
-    *   `ProtectedRoute` (`src/components/Auth/ProtectedRoute.jsx`) wraps routes that require authentication, checking the state from `AuthContext`.
-    *   Navigation is triggered programmatically using the `useNavigate` hook or declaratively using `<Link>` components.
-*   **Coupling:** Low. Pages are decoupled from each other; routing configuration is centralized in `App.jsx`.
-
-## 3. Directory Structure
-
-The `src/` directory is organized by feature and type:
-src/
-├── App.jsx # Main application component, layout, routing
-├── main.jsx # Application entry point, context providers setup
-├── index.css # Global styles, Tailwind imports
-├── ErrorBoundary.jsx # Top-level error handling
-├── assets/ # Static assets (images, audio, animations)
-├── components/ # Reusable UI components
-│ ├── Auth/ # Authentication-related components
-│ ├── Game/ # Game-related components
-│ ├── Layout/ # Layout structure components (Button)
-│ ├── Profile/ # User profile components
-│ └── Shared/ # Components used across multiple features
-├── context/ # React Context providers for state management
-│ ├── AuthContext.jsx
-│ ├── GameContext.jsx
-│ └── UserContext.jsx
-├── hooks/ # Custom React hooks (e.g., useAudio)
-└── pages/ # Top-level page components mapped to routes
+The [route definitions](../server/routes/game.route.js) show middleware and rate limiting. See the [event examples](EVENTS.md) for coursework evidence and the [README](../README.md) for local setup.
