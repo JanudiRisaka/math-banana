@@ -23,19 +23,21 @@ const { chromium } = require('playwright');
       });
       await page.route('https://marcconrad.com/uob/banana/api.php', route =>
         route.fulfill({ json: { question: '/favicon.svg', solution: 0 } }));
-      await page.clock.install();
       await page.goto('http://localhost:5173/game');
       await page.getByText('Expert', {exact:true}).click({ timeout: 10000 });
       await page.getByAltText('Math Question').waitFor();
-      if (ending === 'timer') {
-        await page.clock.runFor(31000);
-      } else {
+      if (ending === 'lives') {
         for (let i = 0; i < 3; i++) {
           await page.getByRole('spinbutton').fill('1');
           await page.getByRole('button', { name: 'Submit Answer' }).click();
         }
       }
-      await page.getByText('Game Over', {exact:true}).waitFor({ timeout: 8000 });
+      try {
+        await page.getByRole('heading', { name: 'Game Over', exact: true }).waitFor({ timeout: 45000 });
+      } catch (error) {
+        console.error({ ending, scores, pageErrors, screen: await page.locator('main').innerText({ timeout: 2000 }).catch(() => '') });
+        throw error;
+      }
       assert.deepEqual(scores, [0]);
       assert.deepEqual(pageErrors, []);
       console.log(ending + ': one score request and Game Over shown');
