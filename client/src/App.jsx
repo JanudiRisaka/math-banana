@@ -8,7 +8,7 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import UserProfile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Header from './components/Shared/Header';
 import Footer from './components/Shared/Footer';
 import Home from './pages/Home';
