@@ -7,11 +7,14 @@ const { chromium } = require('playwright');
     for (const ending of ['timer', 'lives']) {
       const page = await browser.newPage();
       const scores = [];
+      const pageErrors = [];
+      page.on('pageerror', error => pageErrors.push(error.message));
       await page.route('**/api/**', async route => {
         const path = new URL(route.request().url()).pathname;
         if (path === '/api/game/scores') {
           scores.push(route.request().postDataJSON().score);
           await new Promise(resolve => setTimeout(resolve, 1200));
+          return route.fulfill({ json: { success: true, data: { highScore: 0, dailyStreak: 1 } } });
         }
         const data = path === '/api/user/data'
           ? { success: true, userData: { username: 'Test Player', isAccountVerified: true } }
@@ -34,6 +37,7 @@ const { chromium } = require('playwright');
       }
       await page.getByText('Game Over', {exact:true}).waitFor({ timeout: 8000 });
       assert.deepEqual(scores, [0]);
+      assert.deepEqual(pageErrors, []);
       console.log(ending + ': one score request and Game Over shown');
       await page.close();
     }
