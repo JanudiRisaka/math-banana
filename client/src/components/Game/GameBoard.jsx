@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Timer, Trophy } from 'lucide-react';
+import { fetchPuzzle } from './fetchPuzzle';
 import { Button } from '../Layout/Button';
 import { useGame } from '../../context/GameContext';
 import { useAuth } from '../../context/AuthContext'; // Import AuthContext
@@ -43,18 +44,25 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   const timerRef = useRef(null);
   const mounted = useRef(true);
 
-  // Event: Fetch questions from Banana API
+  const puzzleRequest = useRef(null);
+  const canAnswer = Boolean(currentQuestion) && !isLoading && !error &&
+    !isGameOver && lives > 0 && timeLeft > 0;
+
   const fetchNewQuestion = useCallback(async () => {
-    if (!mounted.current) return;
+    puzzleRequest.current?.abort();
+    const controller = new AbortController();
+    puzzleRequest.current = controller;
+    setError('');
+    setCurrentQuestion(null);
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-      const response = await fetch('https://marcconrad.com/uob/banana/api.php');
-      const data = await response.json();
-      if (mounted.current) setCurrentQuestion(data);
-    } catch (err) {
-      if (mounted.current) setError('Failed to fetch question. Please try again.');
+      const puzzle = await fetchPuzzle({ signal: controller.signal });
+      if (!controller.signal.aborted) setCurrentQuestion(puzzle);
+    } catch {
+      if (!controller.signal.aborted) setError('Failed to load puzzle. Please try again.');
     } finally {
-      if (mounted.current) setIsLoading(false);
+      if (!controller.signal.aborted) setIsLoading(false);
     }
   }, []);
 
@@ -63,7 +71,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
     fetchNewQuestion();
     return () => {
       mounted.current = false;
-      clearInterval(timerRef.current);
+      puzzleRequest.current?.abort();
     };
   }, [fetchNewQuestion]);
 
@@ -98,18 +106,20 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   }, [lives, timeLeft, score, isGameOver, onGameOver, saveScore, setIsGameOver, isAuthenticated]);
 
   useEffect(() => {
+    if (!canAnswer) return;
+
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => Math.max(0, prev - 1));
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [difficulty]);
+  }, [canAnswer]);
 
    // Event: Handle answer submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!currentQuestion || isGameOver) {
+    if (!canAnswer || answer === '') {
       return;
     }
 
@@ -148,13 +158,6 @@ const GameBoard = ({ difficulty, onGameOver }) => {
       }
     }
   };
-
-  const handleRetry = useCallback(() => {
-    if (mounted.current) {
-      setError('');
-      fetchNewQuestion();
-    }
-  }, [fetchNewQuestion]);
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
@@ -227,7 +230,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
                 {error}
                 <Button
                   variant="fantasy"
-                  onClick={handleRetry}
+                  onClick={fetchNewQuestion}
                   className="mt-4"
                 >
                   Try Again
@@ -276,7 +279,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
             variant="fantasy"
             size="lg"
             className="w-full max-w-xs"
-            disabled={!answer || isLoading || isGameOver}
+            disabled={answer === '' || !canAnswer}
           >
             Submit Answer
           </Button>
