@@ -43,6 +43,7 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   const [error, setError] = useState('');
   const timerRef = useRef(null);
   const mounted = useRef(true);
+  const finishingRound = useRef(false);
 
   const puzzleRequest = useRef(null);
   const canAnswer = Boolean(currentQuestion) && !isLoading && !error &&
@@ -76,33 +77,27 @@ const GameBoard = ({ difficulty, onGameOver }) => {
   }, [fetchNewQuestion]);
 
   useEffect(() => {
+    if ((lives > 0 && timeLeft > 0) || isGameOver || finishingRound.current) return;
+
+    finishingRound.current = true;
+    clearInterval(timerRef.current);
+
     const endGame = async () => {
-      clearInterval(timerRef.current);
-      if (mounted.current) {
-        // First save the score, then set game over state
-        try {
-          // Only try to save score if authenticated
-          if (isAuthenticated) {
-            await saveScore(score, lives > 0);
-          }
-        } catch (error) {
-          console.error("Failed to save score:", error);
-        } finally {
+      try {
+        if (isAuthenticated) {
+          await saveScore(score, lives > 0);
+        }
+      } catch (error) {
+        console.error('Failed to save score:', error);
+      } finally {
+        if (mounted.current) {
           setIsGameOver(true);
           onGameOver(score);
         }
       }
     };
 
-    if ((lives <= 0 || timeLeft <= 0) && !isGameOver) {
-      // Use isAuthenticated from AuthContext
-      if (isAuthenticated) {
-        endGame();
-      } else {
-        setIsGameOver(true);
-        onGameOver(score);
-      }
-    }
+    endGame();
   }, [lives, timeLeft, score, isGameOver, onGameOver, saveScore, setIsGameOver, isAuthenticated]);
 
   useEffect(() => {
