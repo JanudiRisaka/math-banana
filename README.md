@@ -57,6 +57,21 @@ The React/Vite client fetches puzzles directly from the [Banana API](https://mar
 
 See the [architecture notes](docs/ARCHITECTURE.md) and [event examples](docs/EVENTS.md) for more detail.
 
-## Checks
+## Testing
 
-Run `npm --prefix server test` for API smoke tests that need no database or email credentials. Run `npm --prefix client run build` to check the production frontend build. With the database and email service configured, verify sign-up and email OTP, timer expiry, score persistence after refresh, and leaderboard order as a manual smoke test.
+[GitHub Actions](https://github.com/JanudiRisaka/math-banana/actions) runs these checks on pushes to `main` and pull requests targeting it:
+
+| Check | Coverage |
+| --- | --- |
+| `npm --prefix client test` | Puzzle parsing, failed HTTP responses, and retry after a network error. |
+| `npm --prefix server test` | API health, JSON responses for unknown routes, and signed-out access to game stats. |
+| `npm --prefix client run build` | Production frontend build. |
+| [Chromium gameplay](client/e2e/round.cjs) | Puzzle retry and timer recovery, plus one score-save request when time or lives run out. The browser test uses mock API responses. |
+
+### Live-service checks before submission
+
+1. Sign up with a test account, receive the Brevo OTP, verify the account, and sign in.
+2. Play a round against the live Banana API. Refresh the profile and confirm the completed round is reflected in the stats.
+3. Play with a second test account and confirm the leaderboard ranks both accounts by high score.
+
+Record the actual results of these checks after running the app with a test database and mail configuration.
