@@ -12,6 +12,8 @@ Sign up, verify your email, sign in, and choose a difficulty. Each game starts w
 | Advanced | 45 seconds | 150 |
 | Expert | 30 seconds | 200 |
 
+![Example Math Banana puzzle from the in-game help page](client/src/assets/images/helpExample.png)
+
 ## Run locally
 
 You need Node.js and npm (the frontend build was verified on Node.js 24), a MongoDB Atlas connection or another transaction-capable MongoDB deployment, and Brevo SMTP credentials for verification and password reset emails.
