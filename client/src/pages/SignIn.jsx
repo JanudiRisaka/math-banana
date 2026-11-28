@@ -1,7 +1,7 @@
 // Defines the user sign-in page with email and password fields.
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowLeft, Mail, Lock, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowLeft, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Layout/Button';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ const signInSchema = z.object({
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -127,15 +128,24 @@ export default function SignIn() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400/50"
+                  className="w-full pl-10 pr-12 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400/50"
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"
                 />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-controls="password"
+                  onClick={() => setShowPassword(visible => !visible)}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-gray-300 hover:text-yellow-400 focus-visible:outline focus-visible:outline-yellow-400"
+                >
+                  {showPassword ? <EyeOff aria-hidden="true" className="h-5 w-5" /> : <Eye aria-hidden="true" className="h-5 w-5" />}
+                </button>
               </div>
             </div>
 

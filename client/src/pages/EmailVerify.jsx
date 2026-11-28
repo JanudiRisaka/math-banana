@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 const EmailVerify = () => {
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
   const { sendVerificationOtp, verifyEmail, isLoading } = useAuth();
   const location = useLocation();
@@ -23,7 +25,7 @@ const EmailVerify = () => {
         return;
       }
 
-      setEmail(location.state.email);
+      setEmail(location.state.email.trim().toLowerCase());
       setIsCheckingState(false);
     };
 
@@ -42,13 +44,18 @@ const EmailVerify = () => {
   }, [timeLeft]);
 
   const handleSendOtp = async () => {
+    setIsSending(true);
+    setSendError('');
+
     try {
       await sendVerificationOtp(email);
+      setOtp('');
       setIsOtpSent(true);
       setTimeLeft(60);
-      toast.success('OTP sent to your email');
     } catch (error) {
-      toast.error(error.message || 'Failed to send OTP');
+      setSendError(error.message || 'Failed to send OTP');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -89,7 +96,11 @@ const EmailVerify = () => {
             {email && `Verification code will be sent to ${email}`}
           </div>
 
-          {isOtpSent ? (
+          {sendError && <p role="alert" className="text-sm text-red-300">{sendError}</p>}
+
+          {isOtpSent && <p role="status" className="text-sm text-green-300">Check your inbox for the verification code.</p>}
+
+          {isOtpSent && (
             <>
               <OtpInput value={otp} onChange={setOtp} />
               <button
@@ -100,16 +111,16 @@ const EmailVerify = () => {
                 {isLoading ? 'Verifying...' : 'Submit OTP'}
               </button>
             </>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSendOtp}
-              disabled={timeLeft > 0 || isLoading}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg disabled:opacity-50"
-            >
-              {timeLeft > 0 ? `Resend OTP in ${timeLeft}s` : 'Send OTP to Verify'}
-            </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleSendOtp}
+            disabled={timeLeft > 0 || isSending}
+            className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg disabled:opacity-50"
+          >
+            {isSending ? 'Sending OTP…' : timeLeft > 0 ? `Resend OTP in ${timeLeft}s` : isOtpSent ? 'Resend OTP' : 'Send OTP to Verify'}
+          </button>
         </form>
       </div>
     </div>
